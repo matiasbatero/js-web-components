@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">    
+</head>
+<body>
+
+</body>
+
+</html>
+
+<style type="text/css">
+
+table 
+{
+	border: 1px solid #7F7F7F;
+    background-color: #FFFFFF;
+    font-family: arial;
+    font-size: 12px;
+    border-collapse: collapse;
+    width: 100%;   
+}
+
+td
+{
+	border: 1px solid #D0D0D0;
+    text-align: center;
+    border-collapse: collapse;
+}
+
+th
+{
+	background-color: #7F7F7F;
+	color: white;
+}
+
+tr
+{
+	cursor: default;
+}
+
+tr:nth-child(even)
+{
+	background-color: #FBFBFB
+}
+
+tr:hover
+{
+	color: black;
+	background-color: #F1F1F1;
+	transition: 0.2s;
+}
+
+body
+{
+	background-color: #F0F0F0
+}
+
+</style>
+<script>
+
+	//<link rel="stylesheet" href="widget.css">    
+
+//data-object for testing
+let data = [[ 0, "DataColumnA-0", "DataColumnB-0", true],[ 1, "DataColumnA-1", "DataColumnB-1", true],[ 1, "DataColumnA-2", "DataColumnB-2", false ],[ 3, "DataColumnA-3", "DataColumnB-3", true ],[ 4, "DataColumnA-4", "DataColumnB-4", false ],[ 5, "DataColumnA-5", "DataColumnB-5", true ],[ 6, "DataColumnA-6", "DataColumnB-6", false ],[ 7, "DataColumnA-7", "DataColumnB-7", true ],[ 8, "DataColumnA-8", "DataColumnB-8", false ],[ 9, "DataColumnA-9", "DataColumnB-9", true ],[ 10, "DataColumnA-10", "DataColumnB-10", false ],[ 11, "DataColumnA-11", "DataColumnB-11", true ],[ 12, "DataColumnA-12", "DataColumnB-12", false ],[ 13, "DataColumnA-13", "DataColumnB-13", true ],[ 14, "DataColumnA-14", "DataColumnB-14", false ],[ 15, "DataColumnA-15", "DataColumnB-15", true ],[ 16, "DataColumnA-16", "DataColumnB-16", false ],[ 17, "DataColumnA-17", "DataColumnB-17", true ],[ 18, "DataColumnA-18", "DataColumnB-18", false ],[ 19, "DataColumnA-19", "DataColumnB-19", true ],[ 20, "DataColumnA-20", "DataColumnB-20", false ],[ 21, "DataColumnA-21", "DataColumnB-21", true ],[ 22, "DataColumnA-22", "DataColumnB-22", true ],[ 23, "DataColumnA-23", "DataColumnB-23", true ],[ 24, "DataColumnA-24", "DataColumnB-24", true ],[ 25, "DataColumnA-25", "DataColumnB-25", true ],[ 26, "DataColumnA-26", "DataColumnB-26", false ],[ 27, "DataColumnA-27", "DataColumnB-27", false ],[ 28, "DataColumnA-28", "DataColumnB-28", false ],[ 29, "DataColumnA-29", "DataColumnB-29", true ],[ 30, "DataColumnA-30", "DataColumnB-30", true ],[ 31, "DataColumnA-31", "DataColumnB-31", true ],[ 32, "DataColumnA-32", "DataColumnB-32", false ],[ 33, "DataColumnA-33", "DataColumnB-33", false ],[ 34, "DataColumnA-34", "DataColumnB-34", false ],[ 35, "DataColumnA-35", "DataColumnB-35", false ],[ 36, "DataColumnA-36", "DataColumnB-36", true ],[ 37, "DataColumnA-37", "DataColumnB-37", true ],[ 38, "DataColumnA-38", "DataColumnB-38", false ],[ 39, "DataColumnA-39", "DataColumnB-39", false ],[ 40, "DataColumnA-40", "DataColumnB-40", true ]];
+
+function uuid(a){return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+1e3+4e3+8e3+1e11).replace(/[018]/g,uuid)}
+//function uuid(a){return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,uuid)}
+
+
+/* CSS JS
+tbl.shadowRoot.appendChild( document.createElement('style') );
+tbl.shadowRoot.styleSheets[0].insertRule('..css..code...', 0);
+tbl.shadowRoot.styleSheets[0].cssRules[0].selectorText = 'tr:nth-child(even)' <--- where to be applied
+tbl.shadowRoot.styleSheets[0].cssRules[0].style.backgroundColor = 'red' <--- css value property
+*/
+
+class HTMLDataTable extends HTMLElement
+{
+	constructor( )
+	{
+		super();
+
+		//validation
+
+		//instances (read attributes first if not defined use defaults)
+		this.innerModel = new Array();
+		this.innerDOM = document.createElement('table');
+		this.innerDOM.createTBody();
+
+		this.attachShadow({ mode: 'open' });
+
+		//model-handler-binding
+		this.__oninsert__ = event => this.oninsert(event);
+		this.__onupdate__ = event => this.onupdate(event);
+		this.__onselect__ = event => this.onselect(event);
+		this.__onunselect__ = event => this.onunselect(event);
+		this.__ondelete__ = event => this.ondelete(event);
+		this.__onreload__ = event => this.onreload(event);
+		this.__onempty__ = event => this.onempty(event);
+
+		//connections
+		this.addEventListener('insert', this.__oninsert__ );
+        this.addEventListener('update', this.__onupdate__ );
+        this.addEventListener('select', this.__onselect__ );
+        this.addEventListener('unselect', this.__onunselect__ );
+        this.addEventListener('delete', this.__ondelete__ );
+        this.addEventListener('reload', this.__onreload__ );
+        this.addEventListener('empty', this.__onempty__);
+	}
+
+	//model event handlers
+	oninsert(event)
+	{
+		//console.log('view says that: '+event.detail.id+' contents will be rendered now');
+
+		let index = this.getIndexByid(event.detail.id);
+		let data = this.getObjectByid(event.detail.id);
+
+		let row = this.innerDOM.tBodies[0].insertRow(index);
+
+		/*binding-section
+		The binding section is the relation beetween the model data and its html rendering.
+		The binding allows that a modification on the state model reflect visual changes on the user interface, and the opposite. 
+		Now i'm using 'id' attribute for binding. Another way is encapsulating the id through dataset api.
+		API-Standard --> https://developer.mozilla.org/es/docs/Web/API/HTMLElement/dataset
+		For safe bindings, 'id' needs to be unique locally and non-locally. So uuid or similar mechanism is necessary
+		to avoid collitions and for safe component distribution.*/
+
+		row.id = event.detail.id;
+
+		let checkcell = row.insertCell();
+		
+		row.rowcheck = document.createElement('input');
+		row.rowcheck.setAttribute('type', 'checkbox');
+		row.rowcheck.setAttribute('name', 'checkbox-select');			
+		checkcell.appendChild(row.rowcheck);
+
+		if ( data.selected )
+			row.rowcheck.checked = true;
+
+		for( let cellindex = 0; cellindex < data.value.length; cellindex++)
+		{
+			let cell = row.insertCell();
+			cell.innerText = data.value[cellindex].toString();
+		}
+	}
+
+	onupdate(event)
+	{
+		let row = this.shadowRoot.getElementById( event.detail.id );
+		let data = this.getObjectByid( event.detail.id );
+
+		if ( data.selected )
+			row.rowcheck.checked = true;
+		else
+			row.rowcheck.checked = false;
+
+		for( let cellindex = 0; cellindex < data.length; cellindex++)
+		{
+			row.children[cellindex+1].innerText = data.value[cellindex].toString();
+		}
+
+		console.log('view says that the rendering of object id='+event.detail.id+' was updated');
+	}
+
+	ondelete(event)
+	{
+		console.log('view says that the object id='+event.detail.id+' was deleted from the ui.');
+		let row = this.shadowRoot.getElementById( event.detail.id );
+		row.parentElement.removeChild(row);
+		
+	}
+
+	onreload(event)
+	{
+		while( this.innerDOM.tBodies[0].childElementCount != 0 )
+				this.innerDOM.tBodies[0].deleteRow(0);
+
+		for( datarow of this.innerModel )
+		{
+			this.insert(datarow);
+		}		
+	}
+
+	onempty(event)
+	{
+		//console.log('view says that object id='+event.detail.id+' wants to be selected');
+
+		while( this.innerDOM.tBodies[0].childElementCount != 0 )
+				this.innerDOM.tBodies[0].deleteRow(0);
+
+		this.insert( [1,2,3,4,5] );
+
+		let row = this.innerDOM.tBodies[0].insertRow();
+		let cell = row.insertCell();
+
+		cell.setAttribute('colspan', 5);
+		cell.innerText = 'No data available in table';
+	}
+
+	//view event handlers
+	onselect(event)
+	{
+		console.log('view says that object id='+event.detail.id+' wants to be selected');
+		this.select( this.getIndexByid(event.detail.id) );
+	}
+
+	onunselect(event)
+	{
+		console.log('view says that object id='+event.detail.id+' wants to be unselected');
+		this.unselect( this.getIndexByid(event.detail.id) );
+	}
+
+	//web component api implementation
+	connectedCallback() 
+	{
+		//capture checkbox click and forward as a selected/unselected ui-event (more semantic event)
+		this.innerDOM.addEventListener('click', (event) =>
+		{
+			if ( event.target.name == 'checkbox-select' )
+			{
+				let row = event.target;
+
+				//The parent row <tr> element has the id-binding, so we need to find it to forward to extract and forward it.
+				//If you prefeer, you can attach a meta-property on the checkbox element and use it directly without searching.
+				while( row.nodeName != 'TR')
+					row = row.parentElement;
+
+				if( event.target.checked )
+				{
+					this.dispatchEvent( new CustomEvent('select', { detail:{id:row.id}} ) );
+				}
+				else
+				{
+					this.dispatchEvent( new CustomEvent('unselect', { detail:{id:row.id}} ) );
+				}
+			}
+		});
+
+		this.innerDOM.addEventListener('select', this.onselect );
+		this.innerDOM.addEventListener('unselect', this.onunselect );
+
+		//insert dom content
+		this.shadowRoot.appendChild( this.innerDOM );
+    }
+
+    adoptedCallback()
+    {
+
+    }
+
+    disconnectedCallback()
+    {
+    	this.innerDOM.removeEventListener('select', this.onselect );
+		this.innerDOM.removeEventListener('unselect', this.onunselect );
+
+		
+    }
+
+    attributeChangedCallback(attrName, oldVal, newVal)
+    {
+
+    }
+
+    static get observedAttributes() 
+    {
+    	return [];
+	}
+
+	clear()
+	{
+		while( this.innerDOM.tBodies[0].childElementCount != 0 )
+				this.innerDOM.tBodies[0].deleteRow(0);
+	}
+
+	insert( dataObject, index, id = uuid() )
+	{
+		let success = false;
+
+		let object = { value: dataObject, selected: false, id: id };
+		
+		if( index == undefined || index == null )
+		{
+			this.innerModel.push( object );
+			success = true;
+		}
+		else if( index >= 0 || index <= this.innerModel.length )
+		{
+			this.innerModel.splice( index, 0, object );
+			success = true;
+		}
+		
+
+		if ( success )
+		{
+			//console.log('model says: '+id+' was inserted');
+			this.dispatchEvent( new CustomEvent('insert', { detail:{ id:id } }) );
+		}
+		else
+			console.error('IndexSizeError: Index or size is negative or greater than the allowed amount');
+
+		return this.innerModel.length;
+	}
+
+	update( dataObject, index )
+	{
+		if ( index >= 0 && index < this.innerModel.length )
+		{
+			this.getObjectByIndex( index ).value = dataObject;
+			this.dispatchEvent( new CustomEvent('update', { detail:{ id:this.getObjectByIndex( index ).id } }) );
+		}
+	}
+
+	get length()
+	{
+		return this.innerModel.length;
+	}
+
+	delete( index )
+	{
+		if ( index >= 0 && index < this.length )
+		{
+			let object = this.innerModel.splice( index, 1 );
+			console.log('model says that object id='+object.id+' was deleted');
+			this.dispatchEvent( new CustomEvent('delete', { detail:{ id:object[0].id } }) );
+		}
+	}
+
+	clear()
+	{
+		this.innerModel = [];
+		this.dispatchEvent( new CustomEvent('empty') );
+	}
+
+	isEmpty()
+	{
+		return (this.innerModel.length == 0);
+	}
+
+	getObjectByid( id )
+	{
+		return this.innerModel.find( item => item.id==id );
+	}
+
+	getIndexByid( id )
+	{
+		return this.innerModel.findIndex( item => item.id==id );
+	}
+
+	getObjectByIndex( index )
+	{
+		return ( index >= 0 && index < this.innerModel.length )? this.innerModel[index] : null;
+	}
+
+	select( index )
+	{
+		let object = this.getObjectByIndex(index);
+
+		if ( object != null )
+		{
+			object.selected = true;
+			console.log('model says that object id='+object.id+' is selected');
+			this.dispatchEvent( new CustomEvent('update', { detail:{ id:object.id } }) );
+		}
+	}
+
+	unselect( index )
+	{
+		let object = this.getObjectByIndex(index);
+
+		if ( object != null )
+		{
+			object.selected = false;
+			console.log('model says that object id='+object.id+' is unselected');
+			this.dispatchEvent( new CustomEvent('update', { detail:{ id:object.id } }) );
+		}
+	}
+
+	isSelected( index )
+	{
+		let object = this.getObjectByIndex(index);
+		return ( object != null )? object.selected : null;
+	}
+
+	forEach( callback )
+	{
+		for(item of this.innerModel)
+		{
+			callback(item);
+		}
+	}
+}
+
+
+
+customElements.define('x-datatable', HTMLDataTable );
+
+
+let tbl = new HTMLDataTable();
+
+for( item of data )
+{
+	tbl.insert(item );
+}
+
+document.body.appendChild(tbl);
+
+
+
+
+</script>
