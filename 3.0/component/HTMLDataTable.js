@@ -11,7 +11,7 @@ class HTMLDataTable extends HTMLElement
 		this.innerModel = new HTMLDataModel();
 		this.innerDOM = new HTMLView();
 
-		//this line require refactoring, is only for testing
+		//this line require refactoring, is only for testing style CSS
 		this.innerDOM.shadowRoot.appendChild(HTMLCSSStyle);
 
 		this.attachShadow({ mode: 'open' });		

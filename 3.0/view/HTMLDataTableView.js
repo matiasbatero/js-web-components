@@ -10,7 +10,7 @@ class HTMLDataTableView extends HTMLElement
 		this.attachShadow({ mode: 'open' });
 	}
 
-	//model event handlers
+
 	insert( data, index, id )
 	{
 		//console.log('view says that: '+event.detail.id+' contents will be rendered now');
@@ -76,7 +76,6 @@ class HTMLDataTableView extends HTMLElement
 		cell.innerText = 'No data available in table';
 	}
 
-	//web component api implementation
 	connectedCallback() 
 	{
 		//capture checkbox click and forward as a selected/unselected ui-event (more semantic event)
