@@ -115,12 +115,9 @@ class HTMLDataTable extends HTMLElement
 		while( this.innerDOM.tBodies[0].childElementCount != 0 )
 				this.innerDOM.tBodies[0].deleteRow(0);
 
-		this.insert( [1,2,3,4,5] );
-
 		let row = this.innerDOM.tBodies[0].insertRow();
 		let cell = row.insertCell();
 
-		cell.setAttribute('colspan', 5);
 		cell.innerText = 'No data available in table';
 	}
 
