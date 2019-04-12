@@ -1,3 +1,5 @@
+import {HTMLCSSStyle} from '../style/HTMLDataTableViewStyle.js';
+
 class HTMLDataTableView extends HTMLElement
 {
 	constructor( )
@@ -105,7 +107,9 @@ class HTMLDataTableView extends HTMLElement
 		this.innerDOM.addEventListener('unselect', this.onunselect );
 
 		//insert dom content
+
 		this.shadowRoot.appendChild( this.innerDOM );
+		this.shadowRoot.appendChild(HTMLCSSStyle);
     }
 
     adoptedCallback()

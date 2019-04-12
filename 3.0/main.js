@@ -10,3 +10,6 @@ data.forEach( item => table.innerModel.insert(item) );
 document.body.appendChild(table);
 
 document.table = table;
+
+
+

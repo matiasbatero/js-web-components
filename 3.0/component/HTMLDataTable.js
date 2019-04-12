@@ -1,18 +1,14 @@
 import {HTMLCollectionModel} from '../model/HTMLCollectionModel.js';
 import {HTMLDataTableView} from '../view/HTMLDataTableView.js';
-import {HTMLCSSStyle} from '../style/HTMLDataTableViewStyle.js';
 
 class HTMLDataTable extends HTMLElement
 {
-	constructor( HTMLDataModel = HTMLCollectionModel, HTMLView = HTMLDataTableView, HTMLCSS = HTMLCSSStyle  )
+	constructor( HTMLDataModel = HTMLCollectionModel, HTMLView = HTMLDataTableView )
 	{
 		super();
 
 		this.innerModel = new HTMLDataModel();
 		this.innerDOM = new HTMLView();
-
-		//this line require refactoring, is only for testing style CSS
-		this.innerDOM.shadowRoot.appendChild(HTMLCSSStyle);
 
 		this.attachShadow({ mode: 'open' });		
 
