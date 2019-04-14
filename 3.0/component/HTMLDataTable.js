@@ -95,6 +95,11 @@ class HTMLDataTable extends HTMLElement
     	return [];
 	}
 
+	get value()
+	{
+		return this.innerModel;
+	}
+
 	
 }
 

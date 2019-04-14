@@ -23,8 +23,8 @@ class HTMLDataTableView extends HTMLElement
 		let checkcell = row.insertCell();
 		
 		row.rowcheck = document.createElement('input');
-		row.rowcheck.setAttribute('type', 'checkbox');
-		row.rowcheck.setAttribute('name', 'checkbox-select');			
+		row.rowcheck.type = 'checkbox';
+		row.rowcheck.name = 'checkbox-select';			
 		checkcell.appendChild(row.rowcheck);
 
 		if ( data.selected )
