@@ -6,9 +6,9 @@ let data = [[ 0, "DataColumnA-0", "DataColumnB-0", true],[ 1, "DataColumnA-1", "
 
 let table = new HTMLDataTable();
 
-data.forEach( item => table.innerModel.insert(item) );
+data.forEach( item => table.value.insert(item) );
 
 document.body.appendChild(table);
 
-document.table = table;
+
 

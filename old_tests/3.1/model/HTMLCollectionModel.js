@@ -1,48 +1,128 @@
 import {uuid} from '../lib/uuid.js';
 
-class HTMLValueModel
+class HTMLCell
 {
-	constructor( parentEventTarget, value )
+	constructor( parent, value )
 	{
-		this.__value__ = value;
-		this.__parent__ = parentEventTarget;
+		this.parentModel = parent;
 	}
 
-	get value()
-	{
-		return this.__value__;
-	}
 
-	set value(newValue)
-	{
-		if ( this.__value__ != newValue )
-		{
-			this.__value__ = newValue;
-			this.__parent__.dispatchEvent('change',{ detail:newValue});
-		}
-	}
 }
 
-class HTMLRowItemModel
+class HTMLMapRow
 {
-	constructor( parentModel )
+	constructor( parent, key, value )
 	{
-
+		this.parentModel = parent;
+		this.key = key;
+		this.value = value;
 	}
 
-	isSelected()
+	set( index, value )
+	{
+		this.dispatchEvent( new CustomEvent('change'));
+	}
+
+	get( index )
 	{
 
 	}
 
 	select()
 	{
-
+		this.dispatchEvent( new CustomEvent('change'));
 	}
 
 	unselect()
 	{
+		this.dispatchEvent( new CustomEvent('change'));
+	}
+}
 
+class HTMLMap extends EventTarget
+{
+	constructor()
+	{
+		super();
+		this.__map__ = new Map();
+	}
+
+	clear()
+	{
+		this.__map__.clear();
+		this.dispatchEvent( new CustomEvent('clear'));
+	}
+
+	delete( key )
+	{
+		if ( this.__map__.delete(key) )
+		{
+			this.dispatchEvent( new CustomEvent('delete'));
+		}
+	}
+
+	keys()
+	{
+		return this.__map__.keys();
+	}
+
+	values()
+	{
+		return this.__map__.values();
+	}
+
+	entries()
+	{
+		return this.__map__.entries();
+	}
+
+	forEach( callback )
+	{
+		this.__map__.forEach( callback );
+	}
+
+	get(key)
+	{	
+		return this.__map__.get(key);
+	}
+
+	set(key, value)
+	{
+		if ( this.__map__.has(key) )
+		{
+			this.__map__.set(key, value);
+			this.dispatchEvent( new CustomEvent('insert'));
+		}
+		else
+		{
+			this.__map__.set(key, value);
+			this.dispatchEvent( new CustomEvent('update'));
+		}		
+	}
+
+	has(key)
+	{
+		return this.__map__.has(key);
+	}
+	
+}
+
+class HTMLDataTableModel
+{
+	constructor()
+	{
+
+	}
+
+	setColumn()
+	{
+
+	}
+
+	deleteColumn()
+	{
+		
 	}
 }
 
@@ -53,9 +133,7 @@ class HTMLCollectionModel extends EventTarget
 		super();
 		this.data = new Array();
 		this.header = new Array();
-	}
-
-	
+	}	
 
 	insert( dataObject, index, id = uuid() )
 	{

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">    
+	</head>
+<body>
+
+</body>
+<style type="text/css">
+	table 
+		{
+			border: 1px solid #7F7F7F;
+		    background-color: #FFFFFF;
+		    font-family: arial;
+		    font-size: 12px;
+		    border-collapse: collapse;
+		    width: 100%;   
+		}
+
+		td
+		{
+			border: 1px solid #D0D0D0;
+		    text-align: center;
+		    border-collapse: collapse;
+		}
+
+		th
+		{
+			background-color: #7F7F7F;
+			color: white;
+		}
+
+		tr
+		{
+			cursor: default;
+		}
+
+		tr:nth-child(even)
+		{
+			background-color: #FBFBFB
+		}
+
+		tr:hover
+		{
+			color: black;
+			background-color: #F1F1F1;
+			transition: 0.2s;
+		}
+</style>
+
+</html>
+
+<script>
+
+function uuid(a)
+{
+	return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+1e3+4e3+8e3+1e11).replace(/[018]/g,uuid)
+}
+
+
+class ObservableMap extends EventTarget
+{
+	constructor()
+	{
+		super();
+		this._map = new Map();
+	}
+
+	set( key, value)
+	{
+		if( this._map.has(key))
+		{
+			this._map.set(key,value);
+			this.dispatchEvent( new CustomEvent('update', {detail:{key:key}}));
+		}
+		else
+		{
+			this._map.set(key,value);
+			this.dispatchEvent( new CustomEvent('insert', {detail:{key:key}}));
+		}
+	}
+
+	get( key )
+	{
+		return this._map.get(key);
+	}
+
+	delete(key)
+	{
+		if ( this._map.delete(key))
+			this.dispatchEvent( new CustomEvent('delete', {detail:{key:key}}));
+
+		if( this._map.size == 0)
+			this.dispatchEvent( new CustomEvent('empty'));
+	}
+
+	clear()
+	{
+		this._map.clear();
+		this.dispatchEvent( new CustomEvent('empty'));
+	}
+
+	values()
+	{
+		return this._map.values();
+	}
+
+	get size()
+	{
+		return this._map.size;
+	}
+}
+
+class RowSet extends EventTarget
+{
+	constructor( ColumnMetadata )
+	{
+		super();
+		this._map = new Map();
+	}
+
+	set( key, value, index )
+	{
+		if( this._map.has(key))
+		{
+			value.selected = false;
+			this._map.set(key,value);
+			this.dispatchEvent( new CustomEvent('update', {detail:{key:key,index:index}}));
+		}
+		else
+		{
+			value.selected = false;
+			this._map.set(key,value);
+			this.dispatchEvent( new CustomEvent('insert', {detail:{key:key,index:index}}));
+		}
+	}
+
+	get( key )
+	{
+		return this._map.get(key);
+	}
+
+	delete(key)
+	{
+		if ( this._map.delete(key))
+			this.dispatchEvent( new CustomEvent('delete', {detail:{key:key}}));
+
+		if( this._map.size == 0)
+			this.dispatchEvent( new CustomEvent('empty'));
+	}
+
+	clear()
+	{
+		this._map.clear();
+		this.dispatchEvent( new CustomEvent('empty'));
+	}
+
+	values()
+	{
+		return this._map.values();
+	}
+
+	get size()
+	{
+		return this._map.size;
+	}
+}
+
+
+
+class DataColumn
+{
+	constructor( name, datatype, mapIndex )
+	{
+		this.name = name;
+		this.datatype = datatype;
+		this.mapIndex = mapIndex;
+	}
+
+	cellRenderer( cellElement, value )
+	{
+		if ( value[this.mapIndex] == undefined )
+			cellElement.innerText = '######';
+		else
+			cellElement.innerText = value[this.mapIndex].toString();
+	}
+
+	headerRenderer(cellElement)
+	{
+		cellElement.innerText = this.name.toString();
+	}
+}
+
+class SelectColumn extends DataColumn
+{
+	constructor(name, datatype, mapIndex)
+	{
+		super(name, datatype, mapIndex);
+	}
+
+	cellRenderer( cellElement, value )
+	{
+		let data = value[this.mapIndex];
+
+		if( data != undefined && data == false || true )
+		{
+			let ch = document.createElement('input');
+			ch.type = 'checkbox';
+			ch.checked = data;
+			cellElement.appendChild(ch);
+		}
+		
+	}
+
+	headerRenderer(cellElement)
+	{
+		cellElement.innerHTML = '<input type="checkbox"></input>';
+	}
+}
+
+
+class DataTable extends HTMLElement
+{
+	constructor()
+	{
+		super();
+
+		this.columns = new ObservableMap();
+		this.rows = new ObservableMap();
+
+		this.dom = document.createElement('table');
+		this.dom.createTHead();
+		this.dom.createTBody();
+		this.dom.tHead.insertRow();
+
+		this.columns.addEventListener('insert', event => this.oncolumninsert(event) );
+		this.rows.addEventListener('insert', event => this.onrowinsert(event) );
+
+		this.appendChild(this.dom);
+	}
+
+	createRowFrom( id )
+	{
+		let tr = document.createElement('tr');
+		tr.id = id;
+
+		let data = this.rows.get(id);
+
+		for( let h of this.columns.values() )
+		{
+			let td = tr.insertCell();
+			h.cellRenderer( td, data );
+		}
+
+		return tr;
+	}
+
+	oncolumninsert( event )
+	{
+		let th = document.createElement('th');
+
+		let col = this.columns.get(event.detail.key);
+
+		th.id = event.detail.key;
+		col.headerRenderer(th);
+		this.dom.tHead.firstChild.appendChild(th);
+	}
+
+	onrowinsert(event)
+	{
+		let tr = this.createRowFrom(event.detail.key);
+		this.dom.tBodies[0].appendChild(tr);
+	}
+
+	reload()
+	{
+		while( this.tBodies[0].childElementCount != 0 )
+			this.tBodies[0].deleteRow(0);
+
+		for( let r of this.rows.keys() )
+		{
+			this.dom.tBodies[0].appendChild(this.createRowFrom(r));
+		}
+	}
+}
+
+customElements.define('x-datatable', DataTable );
+
+let data = [[ 0, "DataColumnA-0", "DataColumnB-0", true],[ 1, "DataColumnA-1", "DataColumnB-1", true],[ 1, "DataColumnA-2", "DataColumnB-2", false ],[ 3, "DataColumnA-3", "DataColumnB-3", true ],[ 4, "DataColumnA-4", "DataColumnB-4", false ],[ 5, "DataColumnA-5", "DataColumnB-5", true ],[ 6, "DataColumnA-6", "DataColumnB-6", false ],[ 7, "DataColumnA-7", "DataColumnB-7", true ],[ 8, "DataColumnA-8", "DataColumnB-8", false ],[ 9, "DataColumnA-9", "DataColumnB-9", true ],[ 10, "DataColumnA-10", "DataColumnB-10", false ],[ 11, "DataColumnA-11", "DataColumnB-11", true ],[ 12, "DataColumnA-12", "DataColumnB-12", false ],[ 13, "DataColumnA-13", "DataColumnB-13", true ],[ 14, "DataColumnA-14", "DataColumnB-14", false ],[ 15, "DataColumnA-15", "DataColumnB-15", true ],[ 16, "DataColumnA-16", "DataColumnB-16", false ],[ 17, "DataColumnA-17", "DataColumnB-17", true ],[ 18, "DataColumnA-18", "DataColumnB-18", false ],[ 19, "DataColumnA-19", "DataColumnB-19", true ],[ 20, "DataColumnA-20", "DataColumnB-20", false ],[ 21, "DataColumnA-21", "DataColumnB-21", true ],[ 22, "DataColumnA-22", "DataColumnB-22", true ],[ 23, "DataColumnA-23", "DataColumnB-23", true ],[ 24, "DataColumnA-24", "DataColumnB-24", true ],[ 25, "DataColumnA-25", "DataColumnB-25", true ],[ 26, "DataColumnA-26", "DataColumnB-26", false ],[ 27, "DataColumnA-27", "DataColumnB-27", false ],[ 28, "DataColumnA-28", "DataColumnB-28", false ],[ 29, "DataColumnA-29", "DataColumnB-29", true ],[ 30, "DataColumnA-30", "DataColumnB-30", true ],[ 31, "DataColumnA-31", "DataColumnB-31", true ],[ 32, "DataColumnA-32", "DataColumnB-32", false ],[ 33, "DataColumnA-33", "DataColumnB-33", false ],[ 34, "DataColumnA-34", "DataColumnB-34", false ],[ 35, "DataColumnA-35", "DataColumnB-35", false ],[ 36, "DataColumnA-36", "DataColumnB-36", true ],[ 37, "DataColumnA-37", "DataColumnB-37", true ],[ 38, "DataColumnA-38", "DataColumnB-38", false ],[ 39, "DataColumnA-39", "DataColumnB-39", false ],[ 40, "DataColumnA-40", "DataColumnB-40", true ]];
+
+let dt = new DataTable();
+dt.columns.set('colp', new SelectColumn('All', Boolean, 'selected'));
+dt.columns.set('colA', new DataColumn('ColumnA', String, 0));
+dt.columns.set('colB', new DataColumn('ColumnB', String, 1));
+dt.columns.set('colC', new DataColumn('ColumnC', String, 2));
+dt.columns.set('colD', new DataColumn('ColumnD', String, 3));
+
+let i = 0;
+for( let d of data )
+{
+	d.selected = false;
+	dt.rows.set(i++, d );
+};
+
+document.body.appendChild(dt);
+
+</script>

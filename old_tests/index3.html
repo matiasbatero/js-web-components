@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">    
+	</head>
+<body>
+
+</body>
+<style type="text/css">
+	table 
+		{
+			border: 1px solid #7F7F7F;
+		    background-color: #FFFFFF;
+		    font-family: arial;
+		    font-size: 12px;
+		    border-collapse: collapse;
+		    width: 100%;   
+		}
+
+		td
+		{
+			border: 1px solid #D0D0D0;
+		    text-align: center;
+		    border-collapse: collapse;
+		}
+
+		th
+		{
+			background-color: #CACACA;
+			color: black;
+			border: 1px solid #B5B5B5;
+		}
+		
+		th:hover
+		{
+			color: black;
+			background-color:#B9B9B9;
+			transition: 0.2s;
+		}
+
+		tr
+		{
+			cursor: default;
+		}
+
+		tr:nth-child(even)
+		{
+			background-color: #FBFBFB
+		}
+
+		tr:hover
+		{
+			color: black;
+			background-color: #F1F1F1;
+			transition: 0.2s;
+		}
+</style>
+
+</html>
+
+<script>
+
+function uuid(a)
+{
+	return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+1e3+4e3+8e3+1e11).replace(/[018]/g,uuid)
+}
+
+
+class ObservableMap extends EventTarget
+{
+	constructor()
+	{
+		super();
+		this._map = new Map();
+	}
+
+	set( key, value)
+	{
+		if( this._map.has(key))
+		{
+			this._map.set(key,value);
+			this.dispatchEvent( new CustomEvent('update', {detail:{key:key}}));
+		}
+		else
+		{
+			this._map.set(key,value);
+			this.dispatchEvent( new CustomEvent('insert', {detail:{key:key}}));
+		}
+	}
+
+	get( key )
+	{
+		return this._map.get(key);
+	}
+
+	delete(key)
+	{
+		if ( this._map.delete(key))
+			this.dispatchEvent( new CustomEvent('delete', {detail:{key:key}}));
+
+		if( this._map.size == 0)
+			this.dispatchEvent( new CustomEvent('empty'));
+	}
+
+	clear()
+	{
+		this._map.clear();
+		this.dispatchEvent( new CustomEvent('empty'));
+	}
+
+	values()
+	{
+		return this._map.values();
+	}
+
+	keys()
+	{
+		return this._map.keys();
+	}
+
+	get size()
+	{
+		return this._map.size;
+	}
+}
+
+
+
+class DataColumn
+{
+	constructor()
+	{
+		this.title = 'column';
+		this.index = null;
+		this.defaultValue = '';
+	}
+
+	cellRenderer( value )
+	{
+		let cell = document.createElement('td');
+
+		if ( this.index != null && value[this.index] != undefined)
+			cell.innerText = value[this.index].toString();
+		else
+			cell.innerText = '######';
+
+		return cell;			
+	}
+
+	headerRenderer()
+	{
+		let cell = document.createElement('th');
+
+		cell.innerText = this.title.toString();
+
+		return cell;
+	}
+}
+
+class SelectColumn extends DataColumn
+{
+	constructor()
+	{
+		super();
+		this.defaultValue = false;
+	}
+
+	cellRenderer( value )
+	{
+		let cell = document.createElement('td');
+
+		if ( this.index != null && value[this.index] != undefined && value[this.index] == false||true )
+		{
+			let ch = document.createElement('input');
+			ch.type = 'checkbox';
+			ch.checked = value[this.index];
+			cell.appendChild(ch);
+		}
+		
+		return cell;
+	}
+
+	headerRenderer()
+	{
+		let cell = document.createElement('th');
+
+		cell.innerHTML = '<input type="checkbox"></input>';
+
+		return cell;
+	}
+}
+
+class ActionColumn extends DataColumn
+{
+	constructor()
+	{
+		super();
+		this.defaultValue = [];
+	}
+
+	cellRenderer()
+	{
+		let cell = document.createElement('td');
+
+		for(let r of this.defaultValue)
+		{
+			let b = document.createElement('button');
+			b.innerHTML = r;
+			cell.appendChild(b);
+		}
+
+		return cell;
+	}
+
+	headerRenderer()
+	{
+		let cell = document.createElement('th');
+
+		cell.innerHTML = '<b>Actions</b>';
+
+		return cell;
+	}
+}
+
+
+class DataTable extends HTMLElement
+{
+	constructor()
+	{
+		super();
+
+		this.columns = new ObservableMap();
+		this.rows = new ObservableMap();
+
+		this.dom = document.createElement('table');
+		this.dom.createTHead();
+		this.dom.createTBody();
+		this.dom.tHead.insertRow();
+
+		this.columns.addEventListener('insert', event => this.oncolumninsert(event) );
+		this.rows.addEventListener('insert', event => this.onrowinsert(event) );
+
+		this.appendChild(this.dom);
+	}
+
+	connectedCallback()
+	{
+		this.dom.tHead.addEventListener('click', (event) =>
+		{
+			if( event.target.closest('th') != null )
+				console.log('header click');
+		});
+
+		this.dom.tBodies[0].addEventListener('click', (event) =>
+		{
+			if( event.target.closest('tr') != null )
+				console.log('body row click');
+		});
+	}
+
+	createRowFrom( id )
+	{
+		let tr = document.createElement('tr');
+		tr.id = id;
+
+		let data = this.rows.get(id);
+
+		for( let h of this.columns.values() )
+		{
+			tr.appendChild( h.cellRenderer(data) );
+		}
+
+		return tr;
+	}
+
+	createHeaderFrom()
+	{
+		let tr = document.createElement('tr');
+
+		for( let h of this.columns.keys() )
+		{
+			let th = this.columns.get(h).headerRenderer();
+			th.id = h;
+			tr.appendChild( th);
+		}
+
+		return tr;
+	}
+
+
+
+	oncolumninsert( event )
+	{
+		while( this.dom.tHead.childElementCount != 0 )
+			this.dom.tHead.deleteRow(0);
+
+		this.dom.tHead.appendChild( this.createHeaderFrom() );
+	}
+
+	onrowinsert(event)
+	{		
+		console.log(event);
+		let tr = this.createRowFrom(event.detail.key);
+		this.dom.tBodies[0].appendChild(tr);
+	}
+
+	
+}
+
+
+customElements.define('x-datatable', DataTable );
+
+let data = [[],[ 0, "DataColumnA-0"],[ 1, "DataColumnA-1", "DataColumnB-1", true],[ 1, "DataColumnA-2", "DataColumnB-2", false ],[ 3, "DataColumnA-3", "DataColumnB-3", true ],[ 4, "DataColumnA-4", "DataColumnB-4", false ],[ 5, "DataColumnA-5", "DataColumnB-5", true ],[ 6, "DataColumnA-6", "DataColumnB-6", false ],[ 7, "DataColumnA-7", "DataColumnB-7", true ],[ 8, "DataColumnA-8", "DataColumnB-8", false ],[ 9, "DataColumnA-9", "DataColumnB-9", true ],[ 10, "DataColumnA-10", "DataColumnB-10", false ],[ 11, "DataColumnA-11", "DataColumnB-11", true ],[ 12, "DataColumnA-12", "DataColumnB-12", false ],[ 13, "DataColumnA-13", "DataColumnB-13", true ],[ 14, "DataColumnA-14", "DataColumnB-14", false ],[ 15, "DataColumnA-15", "DataColumnB-15", true ],[ 16, "DataColumnA-16", "DataColumnB-16", false ],[ 17, "DataColumnA-17", "DataColumnB-17", true ],[ 18, "DataColumnA-18", "DataColumnB-18", false ],[ 19, "DataColumnA-19", "DataColumnB-19", true ],[ 20, "DataColumnA-20", "DataColumnB-20", false ],[ 21, "DataColumnA-21", "DataColumnB-21", true ],[ 22, "DataColumnA-22", "DataColumnB-22", true ],[ 23, "DataColumnA-23", "DataColumnB-23", true ],[ 24, "DataColumnA-24", "DataColumnB-24", true ],[ 25, "DataColumnA-25", "DataColumnB-25", true ],[ 26, "DataColumnA-26", "DataColumnB-26", false ],[ 27, "DataColumnA-27", "DataColumnB-27", false ],[ 28, "DataColumnA-28", "DataColumnB-28", false ],[ 29, "DataColumnA-29", "DataColumnB-29", true ],[ 30, "DataColumnA-30", "DataColumnB-30", true ],[ 31, "DataColumnA-31", "DataColumnB-31", true ],[ 32, "DataColumnA-32", "DataColumnB-32", false ],[ 33, "DataColumnA-33", "DataColumnB-33", false ],[ 34, "DataColumnA-34", "DataColumnB-34", false ],[ 35, "DataColumnA-35", "DataColumnB-35", false ],[ 36, "DataColumnA-36", "DataColumnB-36", true ],[ 37, "DataColumnA-37", "DataColumnB-37", true ],[ 38, "DataColumnA-38", "DataColumnB-38", false ],[ 39, "DataColumnA-39", "DataColumnB-39", false ],[ 40, "DataColumnA-40", "DataColumnB-40", true ]];
+
+let dt = new DataTable();
+
+let c0 = new SelectColumn();
+let c1 = new DataColumn();
+let c2 = new DataColumn();
+let c3 = new DataColumn();
+let c4 = new ActionColumn();
+let c5 = new DataColumn();
+
+c0.title='ColumnA';
+
+c1.title='ColumnB';
+c1.index=0;
+
+c2.title='ColumnC';
+c2.index=1;
+
+c3.title='ColumnD';
+c3.index=2;
+
+c4.title='ColumnE';
+c4.defaultValue=['Edit','Delete'];
+
+c5.title='value';
+c5.index=3;
+
+dt.columns.set('colp', c0);
+dt.columns.set('colA', c1);
+dt.columns.set('colB', c2);
+dt.columns.set('colC', c3);
+dt.columns.set('colE', c5);
+dt.columns.set('colD', c4);
+
+let i = 0;
+for( let d of data )
+{
+	d.selected = false;
+	dt.rows.set(i++, d );
+};
+
+document.body.appendChild(dt);
+
+</script>
