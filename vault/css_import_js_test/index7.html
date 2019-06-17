@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">    
+	</head>
+<body>
+
+</body>
+</html>
+
+<script>
+
+
+class ObservableMap extends EventTarget
+{
+	constructor( input = new Map() )
+	{
+		super();
+		this._map = new Map();
+	}
+
+	set( id, value )
+	{
+		if( this._map.has(id))
+		{
+			this._map.set(id,value);
+			this.dispatchEvent( new CustomEvent('update', {detail:{id:id}}));
+		}
+		else
+		{
+			this._map.set(id,value);
+			this.dispatchEvent( new CustomEvent('insert', {detail:{id:id}}));
+		}
+	}
+
+	get( id )
+	{
+		return this._map.get(id);
+	}
+
+	delete(id)
+	{
+		if ( this._map.delete(id))
+			this.dispatchEvent( new CustomEvent('delete', {detail:{id:id}}));
+
+		if( this.isEmpty() )
+			this.dispatchEvent( new CustomEvent('empty'));
+	}
+
+	clear()
+	{
+		this._map.clear();
+		this.dispatchEvent( new CustomEvent('empty'));
+	}
+
+	entries()
+	{
+		return this._map.entries();
+	}
+
+	isEmpty()
+	{
+		return ( this._map.size == 0 );
+	}
+
+	get size()
+	{
+		return this._map.size;
+	}
+
+	sort()
+	{
+
+	}
+
+	filter()
+	{
+
+	}
+
+	extract()
+	{
+		
+	}
+
+};
+
+class SortableFilterablePageableMap extends ObservableMap
+{
+	constructor()
+	{
+		super();
+
+		this._filter = () => true;
+		this._sort = (a, b) => a[1] === b[1] ? 0 : a[1] > b[1] ? 1 : -1;
+
+		this._size = 0;
+
+		super.addEventListener('insert', () => { this._filter = null });
+		super.addEventListener('update', () => { this._filter = null });
+	}
+
+	entries()
+	{
+		let partial = [...super.entries()];
+
+		console.log( [...super.entries()].sort( this._sort) );
+	}
+
+	set filter( value )
+	{
+
+	}
+
+	set sort( value )
+	{
+
+	}
+}
+
+
+class HTMLDataTableView extends HTMLElement
+{
+	constructor()
+	{
+		super();
+
+		this.attachShadow({ mode: 'open' });
+
+		this._table = document.createElement('table');
+		this._table.createTBody();
+		this._table.createTHead();
+		this._table.createTFoot();
+		this._table.tHead.insertRow();		
+	}
+
+	insertColumn( title, render, mappingfx )
+	{
+		let tr = this._table.tHead.rows[0];
+		let th = document.createElement('th');
+		th.innerText = title;
+		th.render = render;
+		th.map = mappingfx;
+		tr.appendChild(th);
+		return th;
+	}
+
+	deleteColumn( index )
+	{
+		this._table.tHead.rows[0].deleteCell( index );
+
+		for( let tr of this.rows )
+			tr.deleteCell(index);
+	}
+
+	insertRow( index, value )
+	{
+		return this._table.tBodies[0].insertRow(index);
+	}
+
+	updateRow( )
+	{
+
+	}
+
+	deleteRow(index)
+	{
+		this._table.tBodies[0].deleteRow( index );
+	}
+
+	deleteAllRows()
+	{
+		while( this._table.tBodies[0].childElementCount != 0 )
+			this._table.tBodies[0].deleteRow(0);
+	}
+
+	loadRowsFrom( input )
+	{
+		while( this._table.tBodies[0].childElementCount != 0 )
+			this._table.tBodies[0].deleteRow(0);
+
+		for( let [id,value] of input.entries() )
+		{
+			let tr = this.insertRow();
+
+			for( let col of this.columns )
+			{
+				let cell = tr.insertCell();
+				cell.innerText = col.map(value);
+			}
+		}		
+	}
+
+	
+	get columns()
+	{
+		return this._table.tHead.rows[0].cells;
+	}
+
+	get rows()
+	{
+		return this._table.tBodies[0].rows;
+	}
+
+	get tHead()
+	{
+		return this._table.tHead;
+	}
+
+	connectedCallback()
+	{
+		this.shadowRoot.appendChild( document.createElement('style') );
+		this.shadowRoot.styleSheets[0].insertRule("@import 'test.css'");
+		this.shadowRoot.appendChild(this._table);
+	}
+}
+
+customElements.define('x-datatableview', HTMLDataTableView );
+
+
+class HTMLDataTableElement extends HTMLElement
+{
+	constructor()
+	{
+		super();
+
+		this._rows = new ObservableMap();
+		this._columns = new ObservableMap();
+		this.table = new HTMLDataTableView();
+		this.sortValue = null;
+
+		//model event handlers connections
+		this.rows.addEventListener('insert', event => this.onrowinsert(event));
+		this.rows.addEventListener('delete', event => this.onrowdelete(event));
+		this.rows.addEventListener('update', event => this.onrowupdate(event));
+
+		this.columns.addEventListener('insert', event => this.oncolumninsert(event));
+		this.columns.addEventListener('delete', event => this.oncolumndelete(event));
+		this.columns.addEventListener('update', event => this.oncolumnupdate(event));
+	}
+
+	//model event handler implementation
+
+	onrowinsert(event)
+	{
+		let data = this.rows.get(event.detail.id);		
+		let row = this.table.insertRow();
+
+		for( let [id,col] of this.columns.entries() )
+		{
+			let cell = row.insertCell();
+			cell.innerText = col.map(data);
+		}
+
+		row.bind = event.detail.id;
+	}
+
+	onrowupdate(event)
+	{
+		let data = this.rows.get(event.detail.id);
+		let tr = this.getRowBy(event.detail.id);
+		
+		for( let [id,col] of this.columns.entries() )
+		{
+			let cell = row.insertCell();
+			cell.innerText = col.map(data);
+		}
+	}
+
+	onrowdelete(event)
+	{
+		this.table.deleteRow( this.getRowBy(event.detail.id).rowIndex );
+	}
+
+	oncolumninsert(event)
+	{
+		let data = this.columns.get(event.detail.id);
+		let th = this.table.insertColumn(data.title);
+		
+		th.bind = event.detail.id;
+		//th.innerText = data.title;
+		this.reload();
+	}
+
+	oncolumnupdate(event)
+	{
+		let th = this.getColumnBy(event.detail.id);
+		let col = this.columns.get(event.detail.id);
+
+		th.innerText = col.title;
+		this.reload();
+	}
+
+	oncolumndelete(event)
+	{
+		this.table.deleteColumn( this.getColumnBy(event.detail.id).cellIndex );
+	}
+
+	//view handler implementation
+	oncolumnclick(event)
+	{
+		let columnId = event.target.closest('th').bind;
+
+		if ( this.sort == null )
+			this.sort = { column: columnId, ascendent: true };
+		else
+			this.sort = { column: columnId, ascendent: !this.sort.ascendent };
+	}
+
+	connectedCallback() 
+	{
+		this.appendChild( this.table );
+
+		//view handler connections
+		this.table.tHead.addEventListener('click', event => this.oncolumnclick(event) );
+			
+    }
+
+	adoptedCallback()
+    {
+
+    }
+
+    disconnectedCallback()
+    {
+    	//view handler disconnections
+    }
+
+    attributeChangedCallback(attrName, oldVal, newVal)
+    {
+
+    }
+
+    static get observedAttributes() 
+    {
+    	return [];
+	}
+
+	//web-component-api (view/model integration)
+	get columns()
+	{
+		return this._columns;
+	}
+
+	get rows()
+	{
+		return this._rows;
+	}
+
+	reload()
+	{
+		this.table.deleteAllRows();
+
+		for( let [id,row] of this.rows.entries() )
+		{
+			let tr = this.table.insertRow();
+			let data = this.rows.get(id);
+
+			for( let [id,col] of this.columns.entries() )
+			{
+				let cell = tr.insertCell();
+				cell.innerText = col.map(data);
+			}
+		}		
+	}
+
+	getRowBy( bindingId )
+	{
+		for( let r of this.table.rows )
+		{
+			if( r.bind === bindingId )
+				return r;
+		}
+	}
+
+	getColumnBy( bindingId )
+	{
+		for( let r of this.table.columns )
+		{
+			if( r.bind === bindingId )
+				return r;
+		}
+	}
+}
+
+customElements.define('x-datatable', HTMLDataTableElement );
+
+let dt = new HTMLDataTableElement();
+
+dt.columns.set(0, { title:'A', map: x => x[0] });
+dt.columns.set(1, { title:'B', map: x => x[1] });
+dt.columns.set(2, { title:'C', map: x => x[2] });
+dt.columns.set(3, { title:'D', map: x => x[3] });
+dt.columns.set(4, { title:'E', map: x => x[4] });
+
+
+
+dt.rows.set(1,"abc");
+dt.rows.set(2,"aaa");
+dt.rows.set(3,"caf");
+dt.rows.set(4,"bsd");
+dt.rows.set(5,"ay");
+
+/*dt.rows.set(1,[0,9,9,9,9]);
+dt.rows.set(2,[0,9,9,9,9]);
+dt.rows.set(3,[0,9,9,9,9]);
+dt.rows.set(4,[0,9,9,9,9]);
+dt.rows.set(5,[0,9,9,9,9]);*/
+
+document.body.appendChild(dt);
+
+
+</script>

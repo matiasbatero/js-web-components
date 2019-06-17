@@ -78,6 +78,20 @@ tr
 	border: 1px solid #DADADA;
 }
 
+tr:hover
+{
+	color: #000000;
+	background-color: #F1F6FD;
+	transition: 0.2s;
+}
+
+tr:nth-child(even):hover
+{
+	color: #000000;
+	background-color: #F1F6FD;
+	transition: 0.2s;
+}
+
 th
 {
 	background-color: #F3F3F3;
