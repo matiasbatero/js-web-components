@@ -1,0 +1,235 @@
+
+html body *
+{
+   font-size: 14px !important;
+   color: #000 !important;
+   font-family: Segoe UI, sans-serif;
+}
+
+table 
+{
+	background-color: #FFFFFF;
+    font-family: Segoe UI;
+    font-size: 12px;
+    border-collapse: collapse;
+    width: 70%; 
+    border: 1px solid #CDCDCD;
+	-webkit-box-shadow: 0px 0px 4px -1px rgba(156,156,156,1);
+	-moz-box-shadow: 0px 0px 4px -1px rgba(156,156,156,1);
+	box-shadow: 0px 0px 4px -1px rgba(156,156,156,1);
+}
+
+.input-text--search 
+{
+	//background-image: url("http://karenmenezes.com/search.svg");
+	background-size: 16px, 50%;	
+	background-position: center right 10px, center right 20px;
+	background-repeat: no-repeat;
+	padding-right: 35px; /* Prevents text overlap on the icon */
+	
+	border: 1px solid #CDCDCD;
+	padding-left: 5px;
+	color: gray;
+	font-style: italic;
+}
+
+.select
+{
+	border: 1px solid #CDCDCD;
+	padding-left: 5px;
+	color: gray;
+}
+
+button 
+{
+  background-color: #1A73E8;
+  border: none;
+  color: white;
+  padding-bottom: 2px;
+  padding-top:2px;
+  padding-left: 5px;
+  padding-right: 5px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 12px;
+  margin: 1px;
+  cursor: pointer;
+  border-radius: 12px;
+  font-family: Segoe UI, sans-serif;
+}
+
+td
+{
+	border: 1px solid #DADADA;
+    border-collapse: collapse;
+}
+
+a
+{
+	font-style: normal;
+	text-decoration: none;
+	color: black;
+}
+
+tr
+{
+	height: 25px;
+	border: 1px solid #DADADA;
+}
+
+tr:hover
+{
+	color: #000000;
+	background-color: #F1F6FD;
+	transition: 0.2s;
+}
+
+tr:nth-child(even):hover
+{
+	color: #000000;
+	background-color: #F1F6FD;
+	transition: 0.2s;
+}
+
+th
+{
+	background-color: #F3F3F3;
+	color: #000000;
+	border: 1px solid #CDCDCD;
+	text-align: left;
+	padding: 3px;
+
+	font-weight: normal;
+}
+
+th:hover
+{
+	background-color: #F3F3F3;
+	color: #000000;
+	border-bottom: 1px solid #1A73E8;
+	text-align: left;
+	padding: 3px;
+
+	font-weight: normal;
+	transition: 0.2s;
+}
+
+
+tr:nth-child(even)
+{
+	background-color: #F9F9F9;
+}
+
+
+
+.column-title
+{
+	/* This lines are for text rendering. If text is too large, then the text is simplified with "..." when the column is <= max-width */
+	max-width: 30px !important; 
+    text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+th:hover
+{
+	color: #262626;
+	background-color:#E6E6E6;	
+	box-shadow: 0px 0px 0px 0px #1A73E8 inset;
+	transition: 0.2s;
+}
+
+.sortable-column
+{
+	cursor: pointer;
+
+	
+}
+
+
+.unsortable-column
+{
+	cursor: default;	
+}
+
+.hidden-column
+{
+	visibility: collapse;
+}
+
+.empty-row
+{
+	padding: 3px;
+	text-align: center;
+}
+
+.sort-arrow-undefined::before
+{
+	content: '';
+	float:right;
+	margin-left:4px;
+}
+
+.sort-arrow-ascending::before
+{
+	/*CSS trick: The empty span element is positioned at the right of the th, so the content is placed at the left.*/
+    /*content can be a image using url(http://link.jpg)*/
+	content: '▲';
+	float:right;
+	margin-left:4px;
+}
+
+.sort-arrow-descending::before
+{
+	content: '▼';
+	float:right;
+	margin-left:4px;
+}
+
+.selectable-column
+{
+	width: 10px;
+
+	
+}
+
+
+.td-email
+{
+	display: table-cell;
+	vertical-align: inherit;
+
+	/*text length > max-width is reduced with "..."*/
+	max-width: 75px !important; 
+    text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
+
+	font-style: italic;
+
+	
+	padding: 3px;
+
+	
+}
+
+.td-text
+{
+	display: table-cell;
+	vertical-align: inherit;
+
+	/*text length > max-width is reduced with "..."*/
+	max-width: 75px !important; 
+    text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
+
+	
+	padding: 3px;
+
+	
+}
+
+
+

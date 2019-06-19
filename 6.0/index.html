@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html>
+	<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <title>DataTable - WebComponent</title>
+  <!-- <link rel="stylesheet" href="normalize.css"> -->
+ 
+
+</head>
+
+<body>
+
+</body>
+</html>
+
+<script>
+
+/*Null or undefined  --> if ( value == null ) // checks the two conditions*/
+
+function isJSON(str) 
+{
+    if ( /^\s*$/.test(str) ) return false;
+    str = str.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, '@');
+    str = str.replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']');
+    str = str.replace(/(?:^|:|,)(?:\s*\[)+/g, '');
+    return (/^[\],:{}\s]*$/).test(str);
+}
+
+function JSONSerializer( callbackMap )
+{
+	let obj = {};
+
+	if ( callbackMap != undefined && callbackMap != null )
+	{
+		for( let [field, value] of callbackMap.entries() )
+		{
+			obj[ field.toString() ] = value();
+		}
+	}
+
+	return JSON.stringify(obj);
+}
+
+class FormReader extends Map
+{
+	constructor()
+	{
+		super();
+	}
+
+	set( key, value )
+	{
+		if ( typeof(key)=='string' || key instanceof String  && ( value instanceof Function || value instanceof FormReader ))
+		{
+			super.set(key,value);
+		}
+		else
+		{
+			console.error('Form field needs to be a String. Form values needs to be a Function or another FormReader');
+		}
+	}
+}
+
+
+class Model  extends XMLHttpRequest
+{
+	constructor()
+	{
+		super();
+	}
+
+	request( args )
+	{
+		this.open('post', 'http://localhost/js-web-components/6.0/test-100-items.php');
+		this.send( JSONSerializer(args) );
+	}
+
+}
+
+
+
+class HTMLController
+{
+	constructor( view, model )
+	{
+		this.model = model;
+		this.view = view;
+
+		this.form = new FormReader();
+
+		let _onloadend = event => this.onloadend(event);
+
+		//default-form-parameters
+		this.form.set( 'order', 		value => ( this.view.sortcolumn != null )? this.view.sortcolumn.id : null );
+		this.form.set( 'ascending', 	value => ( this.view.sortcolumn != null )? this.view.sortcolumn.ascending : null );
+		this.form.set( 'pagesize', 		value => this.view.paginator.pagesize );
+		this.form.set( 'page', 			value => this.view.paginator.pageNumber );
+		this.form.set( 'filter', 		value => ( this.view.paginator.filterInput.value != '' )? this.view.paginator.filterInput.value : null );
+		
+		if ( model instanceof EventTarget && view instanceof HTMLElement )
+		{
+			this.model.addEventListener('loadend', _onloadend );
+
+			let mr = event => this.modelRequest(event);
+
+			this.view.addEventListener('sort', mr );
+			this.view.paginator._pagesize.addEventListener('change', mr );
+			this.view.paginator.next.addEventListener('click', mr);
+			this.view.paginator.previous.addEventListener('click', mr);
+
+			this.view.paginator.filterInput.addEventListener('input', event => 
+			{ 
+				if( this.view.paginator.filterInput.value == '' )
+				{
+					this.view.paginator.pageNumber = 1;
+					this.modelRequest();
+				}
+			});
+
+			this.view.paginator.filterInput.addEventListener('keydown', event => 
+			{ 
+				if (event.key === 'Enter')
+				{
+					this.view.paginator.pageNumber = 1;
+			        this.modelRequest();
+			    }
+			});
+		}
+		
+	}
+
+	onloadend()
+	{
+		const response = JSON.parse(model.responseText);
+
+		this.view.value = response.rows;	
+		this.view.paginator.pageNumber = response.page;
+		this.view.paginator.pagesize = response.rows.length;
+	}
+
+	modelRequest()
+	{
+		//console.log( JSONSerializer(this.form) );
+		model.request( this.form );
+	}
+
+}
+
+class HTMLDataTablePaginatorElement extends HTMLElement
+{
+	constructor()
+	{
+		super();		
+ 	
+ 		this.filterInput = document.createElement('input');
+ 		this.filterInput.type = 'text';
+ 		this.filterInput.placeholder = 'Search...';
+ 		this.filterInput.classList.add('input-text--search');
+
+		this.previous = document.createElement('button');
+		this.next = document.createElement('button');
+		this._pagesize = document.createElement('select');
+		this.previous.innerText = 'previous';	
+		this.next.innerText = 'next';
+		
+
+
+		for( let ps of [10,15,20,50]) this.addPageSizeOption(ps,ps);
+		
+		//this.pagesize = 10;
+		this.pageNumber = 1;
+
+		//re-importante esto va si o si aca... en la callback connected se ejecuta solo cuando alguien hace append y no se sabe en que orden hace el addEventListener
+		//en el constructor aseguramos que es en el primer lugar, aunque no tecnicamente el botón no esté disponible en la UI en esta fase.
+
+		this.previous.addEventListener('click', event => ( this.pageNumber > 1 )? this.pageNumber-- : this.pageNumber=1 );
+		this.next.addEventListener('click', event => this.pageNumber++ );
+		this._pagesize.addEventListener('change', event => this.pageNumber=1 );
+
+		
+	}
+
+	connectedCallback()
+	{
+		let div = document.createElement('span');	
+		div.appendChild(this.filterInput);
+		div.appendChild(this._pagesize);
+		div.appendChild(this.previous);
+		div.appendChild(this.next);
+		this.appendChild( div );		
+	}
+
+	addPageSizeOption( value, text )
+	{
+		let option = document.createElement('option');
+		option.text = text;
+		option.value = value;
+		this._pagesize.add(option);
+	}
+
+	get pagesize()
+	{
+		return this._pagesize.options[this._pagesize.selectedIndex].value;
+	}
+
+	set pagesize( value )
+	{
+		let current=-1;
+
+		for( let idx=0; idx < this._pagesize.options.length; idx++)
+		{
+			if( this._pagesize.options[idx].value == value )
+				current=idx;
+		}
+
+		if ( current != -1)
+			this._pagesize.selectedIndex = current;
+	}
+
+	
+}	
+
+
+
+class HTMLDataTableColumn extends HTMLTableCellElement
+{
+	constructor()
+	{
+		super();
+
+		this._arrow = document.createElement('span');
+		this._title = document.createElement('span');
+
+		//default
+		this.classList.toggle('unsortable-column');
+		this._title.classList.add('column-title');
+		this.ascending = undefined;
+
+		this.appendChild(this._title);
+		this.appendChild(this._arrow);
+
+		
+	}
+
+	set title( value )
+	{
+		this._title.innerText = value.toString();
+	}
+
+	get title()
+	{
+		return this._title.innerText;
+	}
+
+	get sortable()
+	{
+		return this.classList.contains('sortable-column');
+	}
+
+	set sortable( value )
+	{
+		if ( typeof value == 'boolean' || value instanceof Boolean )
+		{
+			this.classList.toggle('sortable-column');
+			this.classList.toggle('unsortable-column');
+		}
+		else
+		{
+			this.classList.toggle('unsortable-column');
+			this.classList.toggle('sortable-column');
+		}
+	}
+
+	attributeChangedCallback(attrName, oldVal, newVal)
+	{
+		
+	}
+
+	static get observedAttributes()
+	{
+		return [];
+	}
+
+	
+
+	set ascending( value )
+	{
+		if ( this.sortable ) switch ( value )
+		{
+			case true:
+			{
+				this._arrow.classList.remove('sort-arrow-undefined','sort-arrow-descending');
+				this._arrow.classList.add('sort-arrow-ascending');
+				break;
+			};
+
+			case false:
+			{
+				this._arrow.classList.remove('sort-arrow-ascending','sort-arrow-undefined');
+				this._arrow.classList.add('sort-arrow-descending');
+				break;
+			};
+
+			default:
+			{
+				this._arrow.classList.remove('sort-arrow-ascending','sort-arrow-descending');
+				this._arrow.classList.add('sort-arrow-undefined');
+				break;
+			};
+		}
+	}
+
+	get ascending()
+	{
+		return (this._arrow.classList.contains('sort-arrow-ascending'))? true : this._arrow.classList.contains('sort-arrow-descending')? false : undefined;
+	}
+
+	toggle() 
+	{
+		if ( this.sortable ) switch( this.ascending )
+		{
+			case true:
+			{
+				this.ascending = false;
+				break;		
+			};	
+
+			case false:
+			{
+				this.ascending = true;
+				break;				
+			};
+
+			default:
+			{
+				this.ascending = true;
+				break;
+			};
+		}
+	}
+}
+
+
+class HTMLEmailCell extends HTMLTableCellElement
+{
+	constructor()
+	{
+		super();
+
+		this._email = document.createElement('a');
+		this.classList.add('td-email');
+
+		this.appendChild(this._email);
+	}
+
+	set value( value )
+	{
+		this._email.href = 'mailto:'+value.toString();
+		this._email.innerText = value.toString();
+	}
+
+	get value()
+	{
+		return this._email.innerText;
+	}
+
+}
+
+class HTMLTextCell extends HTMLTableCellElement
+{
+	constructor()
+	{
+		super();
+		this._p = document.createElement('span');
+		this.classList.add('td-text');
+		this.appendChild(this._p);
+	}
+
+	set value( value )
+	{
+		this._p.innerText = value;
+	}
+
+	get value()
+	{
+		return this._p.innerText;
+	}
+
+}
+
+customElements.define('x-datatable-paginator', HTMLDataTablePaginatorElement );
+customElements.define('x-datatable-text-cell', HTMLTextCell, { extends:'td'});
+customElements.define('x-datatable-email-cell', HTMLEmailCell, { extends:'td'});
+customElements.define('x-datatable-column', HTMLDataTableColumn, { extends:'th'});
+
+
+
+class HTMLDataTable extends HTMLElement
+{
+	constructor()
+	{
+		super();
+
+		this.attachShadow({ mode: 'open' });
+
+		this._table = document.createElement('table');
+		this._table.createTBody();
+		this._table.createTHead();
+		this._table.createTFoot();
+
+		this.paginator = new HTMLDataTablePaginatorElement();
+
+		let r = this._table.tHead.insertRow();	
+		this.setAttribute('sortcolumn','');
+	}
+
+	addPaginator()
+	{
+		
+		td.appendChild( new HTMLDataTablePaginatorElement());
+
+	}
+
+	insertColumn( id, title, cellType, mappingfx )
+	{
+		let row = this._table.tHead.rows[0];
+
+		let column = new HTMLDataTableColumn();
+
+		column.title = title;
+		column.cellType = cellType;
+		column.map = mappingfx;
+		column.id = id;
+
+		
+		
+		row.appendChild(column);
+		return column;
+	}
+
+	deleteColumn( index )
+	{
+		this._table.tHead.rows[0].deleteCell( index );
+
+		for( let tr of this.rows )
+			tr.deleteCell(index);
+	}
+
+	insertRow( index, input )
+	{
+		let tr = this._table.tBodies[0].insertRow();
+
+		//input needs to be iterable
+		for( let col of this.columns )
+		{
+			let cell = new col.cellType;
+
+			tr.appendChild(cell);
+
+			if ( col.map == null )
+				cell.value = '';
+			else
+				cell.value = col.map(input);
+
+		}	
+
+		tr.id = this.primaryKey(input);
+
+		return tr;
+	}
+
+	deleteRow(index)
+	{
+		this._table.tBodies[0].deleteRow( index );
+	}
+
+	clear()
+	{
+		while( this._table.tBodies[0].childElementCount != 0 )
+			this._table.tBodies[0].deleteRow(0);
+	}
+
+	get isSorted()
+	{
+		return ( this.sortcolumn instanceof HTMLDataTableColumn && this.sortcolumn.sortable && ( typeof this.sortcolumn == 'boolean' || this.sortcolumn instanceof Boolean ))? true : false;
+	}
+	
+	get columns()
+	{
+		return this._table.tHead.rows[0].cells;
+	}
+
+	get rows()
+	{
+		return this._table.tBodies[0].rows;
+	}
+
+	static get observedAttributes()
+	{
+    	return ['sortcolumn','test'];
+  	}
+
+
+	attributeChangedCallback(attrName, oldVal, newVal)
+	{
+		
+	}
+
+	get sortcolumn()
+	{
+		return this.columns[ this.getAttribute('sortcolumn') ];
+	}
+
+	set sortcolumn(value)
+	{
+		this.setAttribute('sortcolumn',value);
+	}
+
+	connectedCallback()
+	{
+		this.shadowRoot.appendChild( document.createElement('style') );
+		this.shadowRoot.styleSheets[0].insertRule("@import 'test.css'");	
+		this.shadowRoot.appendChild( this._table );
+
+		//paginator
+		let r = this._table.tFoot.insertRow();
+		let td = r.insertCell();
+		td.setAttribute('colspan', this.columns.length );
+		td.style.background = '#F3F3F3';
+		td.appendChild( this.paginator );
+
+		//event-forwarding
+		this.header.addEventListener('click', event =>
+		{
+			const col = event.target.closest('th');
+
+			if( col instanceof HTMLDataTableColumn && col.sortable )
+			{
+				col.toggle();
+
+				for( let c of this.columns )
+				{
+					if ( !(c === col) )
+						c.ascending = undefined;			
+					
+				}
+				
+				this.sortcolumn = col.cellIndex;
+				this.dispatchEvent( new Event('sort') );
+			}
+
+			event.stopPropagation();
+		});
+	}
+
+	set value( newValue )
+	{
+		this._value = newValue;
+
+		//let t0 = performance.now();
+		this.clear();
+
+		if ( this._value == null || this._value.length == 0 )
+		{
+			let tr = this._table.tBodies[0].insertRow();
+			tr.className = 'empty-row';
+			let cell = new HTMLTextCell();		
+			cell.setAttribute('colspan', this.columns.length);
+			cell.innerText = 'No data Available';
+			tr.appendChild(cell);
+		}
+		else
+		{
+			for( let value of this._value )
+			{
+				let tr = this.insertRow(-1,value);				
+			}
+		}
+
+		
+
+		//let t1 = performance.now();
+		//console.log("End of rendering " + (t1 - t0) + "ms.");
+	}
+
+	get header()
+	{
+		return this._table.tHead.rows[0];
+	}
+
+	
+
+
+}
+
+
+
+//transform FormData object into QUERY_STRING
+//const queryString = new URLSearchParams(formDataObject).toString()
+
+customElements.define('x-datatableview', HTMLDataTable );
+
+
+let datatable = new HTMLDataTable();
+let model = new Model();
+let controller = new HTMLController(datatable,model);
+
+datatable.insertColumn( 'name', 		'Employee', HTMLTextCell, 	input => input.name );
+datatable.insertColumn( 'email', 		'Email', 	HTMLEmailCell, 	input => input.email.toLowerCase() );
+datatable.insertColumn( 'birthday', 	'Birthday', HTMLTextCell, 	input => input.birthday );
+datatable.insertColumn( 'salary', 		'Salary', 	HTMLTextCell, 	input => input.salary );
+
+datatable.primaryKey = input => input.index;
+datatable.columns[0].sortable = true;
+
+
+datatable.value = [];
+
+
+
+document.body.appendChild(datatable);
+
+
+
+
+
+</script>
