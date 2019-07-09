@@ -1,0 +1,84 @@
+class HTMLMultipleSortedColumnHeader extends HTMLTableRowElement
+{
+	constructor()
+	{
+		super();
+	}
+
+	connectedCallback()
+	{
+		this.addEventListener('click', event =>
+		{
+			const targetColumn = event.target.closest('th');
+
+			if( targetColumn instanceof HTMLDataTableColumn && targetColumn.sortable )
+			{
+				targetColumn.toggle();
+				this.sortcolumn = targetColumn;
+			}
+		});
+	};
+
+	insertColumn(index, init)
+	{
+		const col = new HTMLDataTableColumn();
+		Object.assign(col,init);
+		const cell = this.insertCell(index);
+		cell.replaceWith(col);
+
+		return col;
+	};
+
+	deleteColumn(index)
+	{
+		this.deleteColumn(index)
+	};
+
+	get columns()
+	{
+		return this.cells;
+	};
+
+	get sortedColumns(){}
+
+	oninsertcolumn(){};
+	ondeletecolumn(){};
+	onsortcolumn(){};
+}
+
+customElements.define('x-multiple-sorted-header', HTMLMultipleSortedColumnHeader, { extends: 'tr'} );
+
+
+class HTMLColumnHeader extends HTMLTableRowElement
+{
+	constructor()
+	{
+		super();
+	}
+
+	connectedCallback(){};
+
+	insertColumn(index )
+	{
+		const col = document.createElement('th');
+		const cell = this.insertCell(col);
+		cell.replaceWith(col);
+
+		return col;
+	};
+
+	deleteColumn(index)
+	{
+		this.deleteColumn(index)
+	};
+
+	get columns()
+	{
+		return this.cells;
+	};
+
+	oninsertcolumn(){};
+	ondeletecolumn(){};
+}
+
+customElements.define('x-header', HTMLColumnHeader, { extends: 'tr'} );

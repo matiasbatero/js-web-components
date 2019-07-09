@@ -118,7 +118,7 @@ th:hover
 
 tr:nth-child(even)
 {
-	background-color: #F9F9F9;
+	background-color: #FDFDFD;
 }
 
 
@@ -178,6 +178,7 @@ th:hover
 	content: '▲';
 	float:right;
 	margin-left:4px;
+	color:#1A73E8;
 }
 
 .sort-arrow-descending::before
@@ -185,6 +186,7 @@ th:hover
 	content: '▼';
 	float:right;
 	margin-left:4px;
+	color: #1A73E8;
 }
 
 .selectable-column

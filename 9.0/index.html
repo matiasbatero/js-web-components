@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta charset="utf-8">
+		<title>DataTable - WebComponent</title>
+		<link rel="stylesheet" type="text/css" href="normalize.css">
+		<link rel="stylesheet" type="text/css" href="test.css">
+	</head>
+	<body>
+		<div style="height: 52px;background-color: rgb(51,103,214);padding: 18px;color: #FFFFFF;font-family: 'Roboto';font-size: 15px">
+			HTMLDataTableElement
+		</div>
+	</body>
+</html>
+
+
+<script>
+
+class HTMLDataTableColumn extends HTMLTableCellElement
+{
+	constructor()
+	{
+		super();
+		this.div = document.createElement('div');		
+
+		this.div.classList.add('column');
+		this.div.classList.add('unsortable');
+		this.div.classList.add('undefined');
+
+		this.appendChild(this.div);
+	}
+
+	set title( value )
+	{
+		this.div.innerText = value.toString();
+	}
+
+	get title()
+	{
+		return this.div.innerText;
+	}
+
+	get sortable()
+	{
+		return this.div.classList.contains('sortable');
+	}
+
+	set sortable( value )
+	{
+		if ( value == true )
+		{
+			this.div.classList.replace('unsortable', 'sortable');
+		}
+		else
+		{
+			this.div.classList.replace('sortable', 'unsortable');
+		}
+	}
+
+	set ascending( value )
+	{
+		if ( this.sortable ) switch ( value )
+		{
+			case true:
+			{
+				this.div.classList.remove('undefined','descending');
+				this.div.classList.add('ascending');
+				break;
+			};
+
+			case false:
+			{
+				this.div.classList.remove('ascending','undefined');
+				this.div.classList.add('descending');
+				break;
+			};
+
+			default:
+			{
+				this.div.classList.remove('ascending','descending');
+				this.div.classList.add('undefined');
+				break;
+			};
+		}
+	}
+
+	get ascending()
+	{
+		return (this.div.classList.contains('ascending'))? true : this.div.classList.contains('descending')? false : undefined;
+	}
+
+	toggle() 
+	{
+		if ( this.sortable ) switch( this.ascending )
+		{
+			case true:
+			{
+				this.ascending = false;
+				break;		
+			};	
+
+			case false:
+			{
+				this.ascending = true;
+				break;				
+			};
+
+			default:
+			{
+				this.ascending = true;
+				break;
+			};
+		}
+	}
+}
+
+customElements.define('x-datatable-column', HTMLDataTableColumn, { extends:'th'});
+
+class HTMLTableLayout extends HTMLTableElement
+{
+	constructor()
+	{
+		super();
+		
+		this.createTBody();
+		this.createTHead();
+		this.createTFoot();
+
+		this.colgroup = document.createElement('colgroup');
+		this.appendChild(this.colgroup);
+
+		this.header = this.createTHead().insertRow();
+		this.tHead.appendChild(this.header);
+
+		this.sorthandler = event=> this.currentsorthandler(event);
+
+		this.singlesortmode = event =>
+		{
+			const targetColumn = event.target.closest('th');
+
+			if( targetColumn instanceof HTMLDataTableColumn && targetColumn.sortable )
+			{
+				targetColumn.toggle();
+				this.colgroup.childNodes[targetColumn.cellIndex].classList.replace('unsorted-column','sorted-column');
+
+				for( let column of this.columns )
+				{
+					if ( !(column === targetColumn) )
+					{
+						column.ascending = undefined;
+						this.colgroup.childNodes[column.cellIndex].classList.replace('sorted-column','unsorted-column');
+					}
+				}
+				
+				this.sortcolumn = targetColumn;
+			}
+		};
+
+		this.multiplesortmode = event =>
+		{
+			const targetColumn = event.target.closest('th');
+
+			if( targetColumn instanceof HTMLDataTableColumn && targetColumn.sortable )
+			{
+				targetColumn.toggle();
+			}
+		}
+
+		this.currentsorthandler = this.singlesortmode;
+	}
+
+	set sortmode( value )
+	{
+		if ( value === 'single')
+		{
+			for( let column of this.columns )
+				column.ascending = undefined;
+
+			this.currentsorthandler = this.singlesortmode;
+		}
+		else if ( value === 'multiple')
+		{
+			for( let column of this.columns )
+				column.ascending = undefined;
+
+			this.currentsorthandler = this.multiplesortmode;
+		}
+	}
+
+	connectedCallback()
+	{
+		this.tHead.rows[0].addEventListener('click', this.sorthandler );
+	}
+
+	insertColumn( args, index )
+	{
+		const col = new HTMLDataTableColumn();
+
+		const colg = document.createElement('col');
+		colg.classList.add('unsorted-column');
+		this.colgroup.appendChild(colg);
+
+		const e = Object.assign(col,args);
+		const cell = this.header.insertCell(index);
+		cell.replaceWith(e);
+		this.reload();
+
+		return col;
+	}
+
+	deleteColumn(index)
+	{
+		this.tHead.rows[0].deleteCell(index);
+		this.colgroup.removeChild(this.colgroup.childNodes[index]);
+
+		for( let row of this.rows )
+		{
+			row.deleteCell(index);
+		}
+	}
+
+	insertRow( args, index )
+	{
+		const row = this.tBodies[0].insertRow(index);
+
+		for( let column of this.columns )
+		{
+			let cellFormat = new column.type();
+
+			cellFormat.value = column.reader(args);
+
+			let cell = row.insertCell(index);
+			cell.replaceWith(cellFormat);
+		}
+
+		return row;
+	}
+	
+	deleteRow(index)
+	{
+		this.this.tBodies[0].deleteRow(index);
+	}
+
+	clear()
+	{
+		while( this.tBodies[0].childElementCount != 0 )
+		{
+			this.tBodies[0].deleteRow(0);
+		}			
+	}
+
+	get columns()
+	{
+		return this.tHead.rows[0].cells;
+	}
+
+	get rows()
+	{
+		return this.tBodies[0].rows;
+	}
+	
+	set value( input )
+	{
+		this._value = input;
+		this.reload();
+	}
+
+	get value()
+	{
+		return this._value;
+	}
+
+	reload()
+	{
+		if ( this._value != null )
+		{
+			this.clear();
+
+			for( let r of this._value )
+			{
+
+				this.insertRow( r );
+			}
+		}		
+	}
+
+
+}
+
+
+customElements.define('x-table-layout', HTMLTableLayout, { extends:'table'} );
+
+class HTMLEmailCell extends HTMLTableCellElement
+{
+	constructor()
+	{
+		super();
+
+		this._email = document.createElement('a');
+		this.classList.add('td-email');
+
+		this.appendChild(this._email);
+	}
+
+	set value( value )
+	{
+		this._email.href = 'mailto:'+value.toString();
+		this._email.innerText = value.toString();
+	}
+
+	get value()
+	{
+		return this._email.innerText;
+	}
+
+}
+
+class HTMLTextCell extends HTMLTableCellElement
+{
+	constructor()
+	{
+		super();
+		this._p = document.createElement('span');
+		this.classList.add('td-text');
+		this.appendChild(this._p);
+	}
+
+	set value( value )
+	{
+		this._p.innerText = value;
+	}
+
+	get value()
+	{
+		return this._p.innerText;
+	}
+
+}
+
+
+customElements.define('x-datatable-text-cell', HTMLTextCell, { extends:'td'});
+customElements.define('x-datatable-email-cell', HTMLEmailCell, { extends:'td'});
+
+class Model extends EventTarget
+{
+	constructor()
+	{
+		super();
+	}
+
+	//server side
+	select()
+	{
+		return fetch('http://localhost/js-web-components/9.0/test-100-items.php', { method:'post'} )
+		.then( response=> response.json() );
+	}
+
+	//client side
+	selectsync()
+	{
+		const response = [{name:"Wanda",email:"ante.ipsum.primis@Inmipede.com",birthday:"21-04-19",salary:"$8093.30",id:"D76E6317-9CC4-6381-17A8-69D3BDC51655"}];
+		return Promise.resolve( response );
+	}
+}
+
+
+let mdl = new Model();
+let dt = new HTMLTableLayout();
+
+
+mdl.select().then( response=> dt.value=response ).catch( err=>alert(err.toString()) );
+
+dt.insertColumn({sortable:false, type:HTMLTextCell,	title:"Name", reader: x=>x.name});
+dt.insertColumn({sortable:true, type:HTMLTextCell,	title:"Email", reader: x=>x.email.toString().toLowerCase()});
+dt.insertColumn({sortable:true, type:HTMLEmailCell, title:"Birthday", reader: x=>x.birthday});
+dt.insertColumn({sortable:true, type:HTMLEmailCell, title:"Salary", reader: x=>x.salary});
+dt.insertColumn({sortable:true, type:HTMLTextCell,	title:"Discount", reader: x=>'???'});
+
+
+document.body.appendChild(dt);
+
+
+
+</script>
