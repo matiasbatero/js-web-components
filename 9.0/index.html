@@ -4,10 +4,13 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<meta charset="utf-8">
 		<title>DataTable - WebComponent</title>
-		<!-- <link rel="stylesheet" type="text/css" href="normalize.css"> -->
+		<link rel="stylesheet" type="text/css" href="normalize.css">
 		<link rel="stylesheet" type="text/css" href="test.css">
 	</head>
 	<body>
+		<div style="height: 52px;background-color: rgb(51,103,214);padding: 18px;color: #FFFFFF;font-family: 'Roboto';font-size: 15px">
+			HTMLDataTableElement
+		</div>
 	</body>
 </html>
 
@@ -19,26 +22,15 @@ class HTMLDataTableColumn extends HTMLTableCellElement
 	constructor()
 	{
 		super();
-		this.div = document.createElement('div');
-<<<<<<< HEAD
-=======
-
->>>>>>> 610e0a004575f463ddca0f8f20179dd8cc4272f0
-		
+		this.div = document.createElement('div');		
 
 		this.div.classList.add('column');
-		this.div.classList.add('noselect');
 		this.div.classList.add('unsortable');
 		this.div.classList.add('undefined');
 
 		this.appendChild(this.div);
 	}
 
-<<<<<<< HEAD
-
-
-=======
->>>>>>> 610e0a004575f463ddca0f8f20179dd8cc4272f0
 	set title( value )
 	{
 		this.div.innerText = value.toString();
@@ -62,7 +54,7 @@ class HTMLDataTableColumn extends HTMLTableCellElement
 		}
 		else
 		{
-			this.div.classList.replace('sortable', 'sortable');
+			this.div.classList.replace('sortable', 'unsortable');
 		}
 	}
 
@@ -125,41 +117,44 @@ class HTMLDataTableColumn extends HTMLTableCellElement
 
 customElements.define('x-datatable-column', HTMLDataTableColumn, { extends:'th'});
 
-
-
-class HTMLSortedColumnHeader extends HTMLTableRowElement
+class HTMLTableLayout extends HTMLTableElement
 {
 	constructor()
 	{
 		super();
-<<<<<<< HEAD
-	}
+		
+		this.createTBody();
+		this.createTHead();
+		this.createTFoot();
 
-	connectedCallback()
-	{
-		this.addEventListener('click', event =>
-=======
+		this.colgroup = document.createElement('colgroup');
+		this.appendChild(this.colgroup);
+
+		this.header = this.createTHead().insertRow();
+		this.tHead.appendChild(this.header);
+
+		this.sorthandler = event=> this.currentsorthandler(event);
 
 		this.singlesortmode = event =>
->>>>>>> 610e0a004575f463ddca0f8f20179dd8cc4272f0
 		{
 			const targetColumn = event.target.closest('th');
 
 			if( targetColumn instanceof HTMLDataTableColumn && targetColumn.sortable )
 			{
 				targetColumn.toggle();
+				this.colgroup.childNodes[targetColumn.cellIndex].classList.replace('unsorted-column','sorted-column');
 
 				for( let column of this.columns )
 				{
 					if ( !(column === targetColumn) )
-						column.ascending = undefined;					
+					{
+						column.ascending = undefined;
+						this.colgroup.childNodes[column.cellIndex].classList.replace('sorted-column','unsorted-column');
+					}
 				}
 				
 				this.sortcolumn = targetColumn;
 			}
-<<<<<<< HEAD
-		});
-=======
 		};
 
 		this.multiplesortmode = event =>
@@ -171,71 +166,53 @@ class HTMLSortedColumnHeader extends HTMLTableRowElement
 				targetColumn.toggle();
 			}
 		}
+
+		this.currentsorthandler = this.singlesortmode;
+	}
+
+	set sortmode( value )
+	{
+		if ( value === 'single')
+		{
+			for( let column of this.columns )
+				column.ascending = undefined;
+
+			this.currentsorthandler = this.singlesortmode;
+		}
+		else if ( value === 'multiple')
+		{
+			for( let column of this.columns )
+				column.ascending = undefined;
+
+			this.currentsorthandler = this.multiplesortmode;
+		}
 	}
 
 	connectedCallback()
 	{
-		this.addEventListener('click', this.singlesortmode );
->>>>>>> 610e0a004575f463ddca0f8f20179dd8cc4272f0
-	};
-
-	insertColumn( args, index )
-	{
-		const col = new HTMLDataTableColumn();
-		const e = Object.assign(col,args);
-		const cell = this.insertCell(index);
-		cell.replaceWith(e);
-
-		return col;
-	};
-
-	deleteColumn(index)
-	{
-		this.deleteColumn(index)
-	};
-
-	get columns()
-	{
-		return this.cells;
-	};
-
-<<<<<<< HEAD
-=======
-	
-
->>>>>>> 610e0a004575f463ddca0f8f20179dd8cc4272f0
-}
-
-customElements.define('x-sorted-header', HTMLSortedColumnHeader, { extends: 'tr'} );
-
-
-
-class HTMLTableLayout extends HTMLTableElement
-{
-	constructor()
-	{
-		super();
-		
-		this.createTBody();
-		this.createTHead();
-		this.createTFoot();
-
-		this.header = new HTMLSortedColumnHeader();
-		this.tHead.appendChild(this.header);
+		this.tHead.rows[0].addEventListener('click', this.sorthandler );
 	}
 
 	insertColumn( args, index )
 	{
-		let column = this.header.insertColumn( args, index );
+		const col = new HTMLDataTableColumn();
 
+		const colg = document.createElement('col');
+		colg.classList.add('unsorted-column');
+		this.colgroup.appendChild(colg);
+
+		const e = Object.assign(col,args);
+		const cell = this.header.insertCell(index);
+		cell.replaceWith(e);
 		this.reload();
 
-		return column;
+		return col;
 	}
 
 	deleteColumn(index)
 	{
 		this.tHead.rows[0].deleteCell(index);
+		this.colgroup.removeChild(this.colgroup.childNodes[index]);
 
 		for( let row of this.rows )
 		{
@@ -259,7 +236,6 @@ class HTMLTableLayout extends HTMLTableElement
 
 		return row;
 	}
-
 	
 	deleteRow(index)
 	{
@@ -276,7 +252,7 @@ class HTMLTableLayout extends HTMLTableElement
 
 	get columns()
 	{
-		return this.header.columns;
+		return this.tHead.rows[0].cells;
 	}
 
 	get rows()
@@ -286,7 +262,7 @@ class HTMLTableLayout extends HTMLTableElement
 	
 	set value( input )
 	{
-		this._value = JSON.parse(input);
+		this._value = input;
 		this.reload();
 	}
 
@@ -295,14 +271,6 @@ class HTMLTableLayout extends HTMLTableElement
 		return this._value;
 	}
 
-<<<<<<< HEAD
-	set reader( input )
-	{
-		this._rowReader = input;
-	}
-
-=======
->>>>>>> 610e0a004575f463ddca0f8f20179dd8cc4272f0
 	reload()
 	{
 		if ( this._value != null )
@@ -374,24 +342,6 @@ class HTMLTextCell extends HTMLTableCellElement
 customElements.define('x-datatable-text-cell', HTMLTextCell, { extends:'td'});
 customElements.define('x-datatable-email-cell', HTMLEmailCell, { extends:'td'});
 
-<<<<<<< HEAD
-
-
-const xhr = new XMLHttpRequest();
-xhr.open('post', 'http://localhost/js-web-components/8.0/test-100-items.php');
-
-xhr.onloadend = response => dt.value = xhr.responseText;
-
-xhr.send();
-
-let dt = new HTMLTableLayout();
-
-dt.insertColumn({ sortable:true, type:HTMLTextCell,	title:"Name", reader: x=>x.name});
-dt.insertColumn({ sortable:true, type:HTMLTextCell,	title:"Email", reader: x=>x.email.toString().toLowerCase()});
-dt.insertColumn({ sortable:true, type:HTMLEmailCell, title:"Birthday", reader: x=>x.birthday});
-dt.insertColumn({ sortable:true, type:HTMLEmailCell, title:"Salary", reader: x=>x.salary});
-dt.insertColumn({ sortable:true, type:HTMLTextCell,	title:"Discount", reader: x=>'???'});
-=======
 class Model extends EventTarget
 {
 	constructor()
@@ -399,50 +349,34 @@ class Model extends EventTarget
 		super();
 	}
 
+	//server side
 	select()
 	{
-		const xhr = new XMLHttpRequest();
-		xhr.open('post', 'http://localhost/js-web-components/8.0/test-100-items.php');
-		xhr.onloadend = x=> this.dispatchEvent( new CustomEvent('ready', { detail:xhr }));
-		xhr.send();
-		return xhr;
+		return fetch('http://localhost/js-web-components/9.0/test-100-items.php', { method:'post'} )
+		.then( response=> response.json() );
+	}
+
+	//client side
+	selectsync()
+	{
+		const response = [{name:"Wanda",email:"ante.ipsum.primis@Inmipede.com",birthday:"21-04-19",salary:"$8093.30",id:"D76E6317-9CC4-6381-17A8-69D3BDC51655"}];
+		return Promise.resolve( response );
 	}
 }
 
-class Controller
-{
-	constructor( view, model )
-	{
-		this.model = model;
-		this.view = view;
-
-
-	}
-
-	onselectclick()
-	{
-		this.model.select().then()
-	}
-
-	onselectresponse()
-	{
-
-	}
-}
 
 let mdl = new Model();
 let dt = new HTMLTableLayout();
 
-mdl.addEventListener( 'ready', response => dt.value = response.detail.responseText );
 
-mdl.select();
+mdl.select().then( response=> dt.value=response ).catch( err=>alert(err.toString()) );
 
-dt.insertColumn({sortable:true, type:HTMLTextCell,	title:"Name", reader: x=>x.name});
+dt.insertColumn({sortable:false, type:HTMLTextCell,	title:"Name", reader: x=>x.name});
 dt.insertColumn({sortable:true, type:HTMLTextCell,	title:"Email", reader: x=>x.email.toString().toLowerCase()});
 dt.insertColumn({sortable:true, type:HTMLEmailCell, title:"Birthday", reader: x=>x.birthday});
 dt.insertColumn({sortable:true, type:HTMLEmailCell, title:"Salary", reader: x=>x.salary});
 dt.insertColumn({sortable:true, type:HTMLTextCell,	title:"Discount", reader: x=>'???'});
->>>>>>> 610e0a004575f463ddca0f8f20179dd8cc4272f0
+
 
 document.body.appendChild(dt);
 

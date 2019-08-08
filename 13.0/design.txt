@@ -1,0 +1,89 @@
+:::::::::::::::::::::::::::::::::::::::::::::::::::MODEL:::::::::::::::::::::::::::::::::::::::::
+
+Model Methods
+==============
+
+promise<array> fetch( args )
+void insertRow( id, args ) 
+void updateRow( id, args )
+void deleteRow( id )
+
+
+
+Model Change Events (If model changes, model raise a event )
+============================================================
+
+external-events:
+----------------
+
+rowinserted --> eventData{id, newDataRow}
+rowupdated --> eventData{id, updatedDataRow}
+rowdeleted --> eventData{id}
+
+readystatechange
+abort
+error
+load
+loadend
+loadstart
+progress
+timeout
+
+internal-events:
+----------------
+
+User defined
+
+:::::::::::::::::::::::::::::::::::::::::::::::::VIEW::::::::::::::::::::::::::::::::::::::::
+
+View Methods
+============
+
+User defined
+
+
+View Events (If view receive a client input request)
+====================================================
+
+external-events:
+----------------
+
+sort --> eventData{ columnId, ascending }
+page --> eventData{ pagenumber }
+filter --> eventData{ filterValue }
+select --> eventData{ rowId }
+
+internal-events:
+----------------
+
+User defined
+
+:::::::::::::::::::::::::::::::::::::::::::CONTROLER::::::::::::::::::::::::::::::::::::::::::
+
+Controller methods (event handlers) Is not necessary to be a Object.
+====================================================================
+
+view-handlers:
+
+Column sort click -->  controller.onsortrequest() handles the event.
+1. The controller receive data from event, and can comunicate to the view to acquire more data to build a request-body and perform a model request.
+2. The controller communicates through the model and then wait the promise of the response if available (see Model API).
+3. If the promise is solved, the handler processes the response and updates the view to impact the changes.
+--------------
+
+onsortrequest
+onpagerequest
+onfilterrequest
+onselectrequest
+
+model-handlers:
+1. The controller receive data from model event, and can comunicate to the model again to acquire more information.
+2. The controller process the response and updates the view to impact the change/s. (see View API)
+---------------
+
+onrowinserted
+onrowupdated
+onrowdeleted
+
+
+
