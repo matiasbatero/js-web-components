@@ -674,7 +674,7 @@ class HTMLDataTableModel extends EventTarget
 		//Also you can use a xhr ajax request. The required thing is to return a promise.
 		//If you don't need to make a http request, you need to return a resolved promise instead.
 
-		return fetch('http://localhost/js-web-components/10.0/test-100-items.php', { method:'post', body: JSON.stringify(args) } ).then( response=> response.json() );
+		return fetch('http://localhost/js-web-components/13.0/test-100-items.php', { method:'post', body: JSON.stringify(args) } ).then( response=> response.json() );
 	}
 
 	
