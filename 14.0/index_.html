@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta charset="utf-8">
+		<title>DataTable - WebComponent</title>
+		<link rel="stylesheet" type="text/css" href="normalize.css">
+		<!-- <link rel="stylesheet" type="text/css" href="test.css"> -->
+		
+		
+	</head>
+	<body>
+		
+	</body>
+</html>
+
+
+<script>
+
+class WCReadOnlyModel extends EventTarget
+{
+	constructor()
+	{
+		super();
+
+		this.rep = new Array();
+
+		this.rep.push( { id:'00000000-0000-0000-0000-000000000000', name: "Undefined"});
+		this.rep.push( { id:"D76E6317-9CC4-6381-17A8-69D3BDC51655" , name:"Hadley" });
+		this.rep.push( { id:"8D800DF2-468C-B6B7-D29A-D67E00714960" , name:"Nicole" });
+		this.rep.push( { id:"B3A8BFC9-E5B1-AC2C-8F45-0694727D0EC2" , name:"Lunea" });
+		this.rep.push( { id:"09B2B291-69BE-CA6F-08B2-855055C1EBA0" , name: "Melinda"});
+		this.rep.push( { id:"B0BE9CE8-1703-0735-E3B4-184554CFE4C7" , name:"Alisa" });
+		this.rep.push( { id:"3E9F85FD-9C85-D37C-0DC8-FDB0632EED0E" , name: "Robert"});
+		this.rep.push( { id:"4D0BB655-534C-D2F1-F7F1-4BF967348E0E" , name: "Aixa"});
+
+		this.dispatchEvent( new CustomEvent('loaded') );
+	}
+
+	//server side
+	query( args )
+	{
+		//This is the place to use the args to build the request. 
+		//You can serialize in any way that you want, make a formdata or similar.
+		//Also you can use a xhr ajax request. The required thing is to return a promise.
+		//If you don't need to make a http request, you need to return a resolved promise instead.
+
+		return Promise.resolve( this.rep );
+		//return fetch('http://localhost/js-web-components/13.0/test-100-items.php', { method:'post', body: JSON.stringify(args) } ).then( response=> response.json() );
+	}
+
+	/*insert( data )
+	{
+		this.rep.push( data );
+		this.dispatchEvent( new CustomEvent('insert', { detail: data }));
+	}
+
+	delete( id )
+	{
+		this.dispatchEvent( new CustomEvent('delete'));
+	}
+
+	update( data )
+	{
+		this.dispatchEvent( new CustomEvent('update'));
+	}*/
+	
+}
+
+class WebComponentView extends HTMLElement
+{
+	constructor()
+	{
+		super();
+
+		this.select = document.createElement('select');
+		this.model = new WCReadOnlyModel();
+
+		
+		this.model.addEventListener('insert', event =>
+		{
+			alert( event.detail );
+		});
+
+		this.model.query().then( response =>
+		{
+			if( response instanceof Array )
+			{
+				for( let _option of response )
+				{
+					let option = document.createElement('option');
+					option.text = _option.name;
+					option.value = _option.id;
+					this.select.add(option);
+				}
+			}
+		});	
+		
+	}
+
+	
+	connectedCallback()
+	{
+		this.appendChild( this.select );
+	}
+
+	
+	
+}
+
+customElements.define('x-dtable', WebComponentView);
+
+class WebComponent extends HTMLElement
+{
+	constructor()
+	{
+		super();
+
+		this.attachShadow({mode: 'open'});
+		
+		let style = document.createElement('style');
+
+		style.textContent = 
+		`
+			table { border:1px solid black; border-collapse: collapse; width:100%; }
+			table tr { border:1px solid black; border-collapse: collapse; height: 24px; }
+			table tr td { border:1px solid black; border-collapse: collapse; }
+			table tr th { border:1px solid black; border-collapse: collapse; }
+		`;
+
+		
+		
+		this.table = document.createElement('table');
+		this.table.createTHead();
+		this.table.createTBody();
+		this.table.createTFoot();
+
+		this.table.tHead.insertRow();
+
+
+		this.shadowRoot.appendChild( this.table );
+		this.shadowRoot.appendChild(style);
+	}
+
+		
+	setColumn( name, isSortable )
+	{
+		let cell = this.table.tHead.rows[0].insertCell();
+		let th = document.createElement('th');
+
+		th.innerText = name.toString();
+		th.sortable = isSortable;
+
+		cell.replaceWith(th);
+	}
+
+	insertRow()
+	{
+		let row = this.table.tBodies[0].insertRow();
+
+		for( let index=0; index<this.table.tHead.rows[0].cells.length; index++ )
+		{
+			row.insertCell();
+		}
+
+		return row;
+	}
+
+	deleteRow( rowId )
+	{
+
+	}
+
+	connectedCallback()
+	{
+		this.appendChild( this.table );
+	}
+
+	
+	
+}
+
+customElements.define('x-dtables', WebComponent);
+
+
+
+
+
+
+let dt = new WebComponent();
+
+dt.setColumn('Id', false );
+dt.setColumn('Name', true );
+dt.setColumn('Email', true );
+
+dt.insertRow();
+dt.insertRow();
+dt.insertRow();
+dt.insertRow();
+
+
+document.body.appendChild(dt);
+
+
+
+
+
+
+</script>

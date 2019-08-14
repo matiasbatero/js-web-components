@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta charset="utf-8">
+		<title>DataTable - WebComponent</title>		
+
+		<style type="text/css">
+		table { border:1px solid black; border-collapse: collapse; width:100%; }
+		table tr { border:1px solid black; border-collapse: collapse; }
+		table tr td { border:1px solid black; border-collapse: collapse; }
+		table tr th { border:1px solid black; border-collapse: collapse; }
+		.toolbar { display:block; border:1px solid black; width: 100%; border-bottom-width: 0px; }
+		.footbar { display:block; border:1px solid black; width: 100%; border-top-width: 0px;}
+		.selectr { width: 16px; }
+		button { margin: 0px; padding: 5px; }
+		</style>
+	</head>
+	<body>
+		<div >
+			<span class="toolbar">
+				<button>NEW +</button>
+				<button>EDIT</button>
+				<button>DELETE</button>
+			</span>
+			<table>
+				<tr>
+					<th><input type="checkbox"></input></th>
+					<th>Header 1</th>
+					<th>Header 2</th>
+					<th>Header 3</th>
+					<th>Header 4</th>
+					<th>Header 5</th>
+				</tr>
+				<tr><td class="selectr"><input type="checkbox"></input></td><td>Row:1 Cell:1</td><td>Row:1 Cell:2</td><td>Row:1 Cell:3</td><td>Row:1 Cell:4</td><td>Row:1 Cell:5</td></tr>
+				<tr><td class="selectr"><input type="checkbox"></input></td><td>Row:2 Cell:1</td><td>Row:2 Cell:2</td><td>Row:2 Cell:3</td><td>Row:2 Cell:4</td><td>Row:2 Cell:5</td></tr>
+				<tr><td class="selectr"><input type="checkbox"></input></td><td>Row:3 Cell:1</td><td>Row:3 Cell:2</td><td>Row:3 Cell:3</td><td>Row:3 Cell:4</td><td>Row:3 Cell:5</td></tr>
+				<tr><td class="selectr"><input type="checkbox"></input></td><td>Row:4 Cell:1</td><td>Row:4 Cell:2</td><td>Row:4 Cell:3</td><td>Row:4 Cell:4</td><td>Row:4 Cell:5</td></tr>
+				<tr><td class="selectr"><input type="checkbox"></input></td><td>Row:5 Cell:1</td><td>Row:5 Cell:2</td><td>Row:5 Cell:3</td><td>Row:5 Cell:4</td><td>Row:5 Cell:5</td></tr>
+				<tr><td class="selectr"><input type="checkbox"></input></td><td>Row:6 Cell:1</td><td>Row:6 Cell:2</td><td>Row:6 Cell:3</td><td>Row:6 Cell:4</td><td>Row:6 Cell:5</td></tr>
+				<tr><td class="selectr"><input type="checkbox"></input></td><td>Row:7 Cell:1</td><td>Row:7 Cell:2</td><td>Row:7 Cell:3</td><td>Row:7 Cell:4</td><td>Row:7 Cell:5</td></tr>
+				<tr><td class="selectr"><input type="checkbox"></input></td><td>Row:8 Cell:1</td><td>Row:8 Cell:2</td><td>Row:8 Cell:3</td><td>Row:8 Cell:4</td><td>Row:8 Cell:5</td></tr>
+				<tr><td class="selectr"><input type="checkbox"></input></td><td>Row:9 Cell:1</td><td>Row:9 Cell:2</td><td>Row:9 Cell:3</td><td>Row:9 Cell:4</td><td>Row:9 Cell:5</td></tr>
+			</table>
+			<span class="footbar">
+				<button>previous</button>
+				<button>next</button>
+				<select>
+					<option>5</option>
+					<option>10</option>
+					<option>20</option>
+				</select>
+				<input type="text" placeholder="Search..."></input>
+			</span>
+		</div>
+	</body>
+</html>
+
+
+
+
+
+
